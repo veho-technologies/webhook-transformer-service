@@ -8,7 +8,7 @@ const project = new GaiaCdkApp({
   enableLambdaLiveDebugger: true,
   enablePersonalStacks: true,
   minNodeVersion: '22.0.0',
-  workflowNodeVersion: '22',
+  workflowNodeVersion: '22.14',
   name: 'webhook-transformer-service',
   projenrcTs: true,
 
