@@ -1,0 +1,6 @@
+PNPM_VERSION=$(pnpm --version | cut -d. -f1)
+if [ "$PNPM_VERSION" != "10" ]; then
+  echo "Error: Expected pnpm major version 10, but found version $PNPM_VERSION"
+  exit 1
+fi
+npx projen lint

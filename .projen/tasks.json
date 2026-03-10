@@ -1,0 +1,688 @@
+{
+  "tasks": {
+    "analyze-bundle": {
+      "name": "analyze-bundle",
+      "steps": [
+        {
+          "exec": "arg=$@\n    if [ \"$arg\" == \"\" ]; \n    then echo \"\\033[0;31m Relative path to handler required!\"; \n    else\n    npx esbuild --bundle --metafile=analyzed_bundle.json --outfile=analyzed_bundle.js --platform=node --target=node20 --keep-names --minify $arg       && npx esbuild-visualizer --filename analyzed_bundle.html --open --metadata ./analyzed_bundle.json; \n    fi",
+          "receiveArgs": true
+        }
+      ]
+    },
+    "build": {
+      "name": "build",
+      "description": "Full release build",
+      "steps": [
+        {
+          "spawn": "default"
+        },
+        {
+          "spawn": "pre-compile"
+        },
+        {
+          "spawn": "compile"
+        },
+        {
+          "spawn": "post-compile"
+        },
+        {
+          "spawn": "test"
+        },
+        {
+          "spawn": "package"
+        }
+      ]
+    },
+    "bundle": {
+      "name": "bundle",
+      "description": "Prepare assets"
+    },
+    "clobber": {
+      "name": "clobber",
+      "description": "hard resets to HEAD of origin and cleans the local repo",
+      "env": {
+        "BRANCH": "$(git branch --show-current)"
+      },
+      "steps": [
+        {
+          "exec": "git checkout -b scratch",
+          "name": "save current HEAD in \"scratch\" branch"
+        },
+        {
+          "exec": "git checkout $BRANCH"
+        },
+        {
+          "exec": "git fetch origin",
+          "name": "fetch latest changes from origin"
+        },
+        {
+          "exec": "git reset --hard origin/$BRANCH",
+          "name": "hard reset to origin commit"
+        },
+        {
+          "exec": "git clean -fdx",
+          "name": "clean all untracked files"
+        },
+        {
+          "say": "ready to rock! (unpushed commits are under the \"scratch\" branch)"
+        }
+      ],
+      "condition": "git diff --exit-code > /dev/null"
+    },
+    "compile": {
+      "name": "compile",
+      "description": "Only compile"
+    },
+    "default": {
+      "name": "default",
+      "description": "Synthesize project files",
+      "steps": [
+        {
+          "exec": "ts-node --project tsconfig.dev.json .projenrc.ts"
+        }
+      ]
+    },
+    "delete:me": {
+      "name": "delete:me",
+      "env": {
+        "PERSONAL_STACK_NAME": "$(whoami | tr -dc '[:alnum:]-' | cut -c 1-10)"
+      },
+      "steps": [
+        {
+          "exec": "cdk destroy webhook-transformer-service-personal-$PERSONAL_STACK_NAME* "
+        }
+      ]
+    },
+    "deploy": {
+      "name": "deploy",
+      "description": "Deploys your CDK app to the AWS cloud",
+      "steps": [
+        {
+          "exec": "cdk deploy",
+          "receiveArgs": true
+        }
+      ]
+    },
+    "deploy-no-synth:dev": {
+      "name": "deploy-no-synth:dev",
+      "description": "Deploy dev without synth using cdk.out/",
+      "steps": [
+        {
+          "exec": "cdk deploy --require-approval never --profile veho-dev --app 'cdk.out/' \"webhook-transformer-service-dev\" \"webhook-transformer-service-dev-*\" --method=direct --outputs-file .outputs.dev.json-temp --concurrency 5"
+        },
+        {
+          "exec": "cp .outputs.dev.json-temp .outputs.dev.json && rm .outputs.dev.json-temp"
+        },
+        {
+          "spawn": "update-event-studio-service:dev"
+        }
+      ]
+    },
+    "deploy-no-synth:me": {
+      "name": "deploy-no-synth:me",
+      "description": "Deploy personal without synth using cdk.out/",
+      "env": {
+        "PERSONAL_STACK_NAME": "$(whoami | tr -dc '[:alnum:]-' | cut -c 1-10)"
+      },
+      "steps": [
+        {
+          "exec": "cdk deploy --require-approval never --profile veho-dev --app 'cdk.out/' \"webhook-transformer-service-personal\" \"webhook-transformer-service-personal-*\" --method=direct --outputs-file .outputs.personal.json-temp --concurrency 5"
+        },
+        {
+          "exec": "cp .outputs.personal.json-temp .outputs.personal.json && rm .outputs.personal.json-temp"
+        }
+      ]
+    },
+    "deploy-no-synth:prod": {
+      "name": "deploy-no-synth:prod",
+      "description": "Deploy prod without synth using cdk.out/",
+      "steps": [
+        {
+          "exec": "cdk deploy --require-approval never --profile veho-prod --app 'cdk.out/' \"webhook-transformer-service-prod\" \"webhook-transformer-service-prod-*\" --method=direct --outputs-file .outputs.prod.json-temp --concurrency 5"
+        },
+        {
+          "exec": "cp .outputs.prod.json-temp .outputs.prod.json && rm .outputs.prod.json-temp"
+        },
+        {
+          "spawn": "notify-multitudes:prod"
+        },
+        {
+          "spawn": "update-event-studio-service:prod"
+        }
+      ]
+    },
+    "deploy-no-synth:staging": {
+      "name": "deploy-no-synth:staging",
+      "description": "Deploy staging without synth using cdk.out/",
+      "steps": [
+        {
+          "exec": "cdk deploy --require-approval never --profile veho-staging --app 'cdk.out/' \"webhook-transformer-service-staging\" \"webhook-transformer-service-staging-*\" --method=direct --outputs-file .outputs.staging.json-temp --concurrency 5"
+        },
+        {
+          "exec": "cp .outputs.staging.json-temp .outputs.staging.json && rm .outputs.staging.json-temp"
+        },
+        {
+          "spawn": "update-event-studio-service:staging"
+        }
+      ]
+    },
+    "deploy:dev": {
+      "name": "deploy:dev",
+      "steps": [
+        {
+          "exec": "cdk deploy --require-approval never --profile veho-dev \"webhook-transformer-service-dev\" \"webhook-transformer-service-dev-*\" --method=direct --outputs-file .outputs.dev.json-temp --concurrency 5"
+        },
+        {
+          "exec": "cp .outputs.dev.json-temp .outputs.dev.json && rm .outputs.dev.json-temp"
+        },
+        {
+          "spawn": "update-event-studio-service:dev"
+        }
+      ]
+    },
+    "deploy:me": {
+      "name": "deploy:me",
+      "env": {
+        "PERSONAL_STACK_NAME": "$(whoami | tr -dc '[:alnum:]-' | cut -c 1-10)"
+      },
+      "steps": [
+        {
+          "exec": "cdk deploy --require-approval never --profile veho-dev \"webhook-transformer-service-personal\" \"webhook-transformer-service-personal-*\" --method=direct --outputs-file .outputs.personal.json-temp --concurrency 5"
+        },
+        {
+          "exec": "cp .outputs.personal.json-temp .outputs.personal.json && rm .outputs.personal.json-temp"
+        },
+        {
+          "exec": "npx @veho/dx-sdk webhook-transformer-service.deploy-personal-stack.event"
+        }
+      ]
+    },
+    "deploy:prod": {
+      "name": "deploy:prod",
+      "steps": [
+        {
+          "exec": "cdk deploy --require-approval never --profile veho-prod \"webhook-transformer-service-prod\" \"webhook-transformer-service-prod-*\" --method=direct --outputs-file .outputs.prod.json-temp --concurrency 5"
+        },
+        {
+          "exec": "cp .outputs.prod.json-temp .outputs.prod.json && rm .outputs.prod.json-temp"
+        },
+        {
+          "spawn": "notify-multitudes:prod"
+        },
+        {
+          "spawn": "update-event-studio-service:prod"
+        }
+      ]
+    },
+    "deploy:staging": {
+      "name": "deploy:staging",
+      "steps": [
+        {
+          "exec": "cdk deploy --require-approval never --profile veho-staging \"webhook-transformer-service-staging\" \"webhook-transformer-service-staging-*\" --method=direct --outputs-file .outputs.staging.json-temp --concurrency 5"
+        },
+        {
+          "exec": "cp .outputs.staging.json-temp .outputs.staging.json && rm .outputs.staging.json-temp"
+        },
+        {
+          "spawn": "update-event-studio-service:staging"
+        }
+      ]
+    },
+    "destroy": {
+      "name": "destroy",
+      "description": "Destroys your cdk app in the AWS cloud",
+      "steps": [
+        {
+          "exec": "cdk destroy",
+          "receiveArgs": true
+        }
+      ]
+    },
+    "diff": {
+      "name": "diff",
+      "description": "Diffs the currently deployed app against your code",
+      "steps": [
+        {
+          "exec": "cdk diff"
+        }
+      ]
+    },
+    "diff-no-synth:dev": {
+      "name": "diff-no-synth:dev",
+      "steps": [
+        {
+          "exec": "cdk diff --profile veho-dev --fail=0 --progress=events --app 'cdk.out/' \"webhook-transformer-service-dev\" \"webhook-transformer-service-dev-*\""
+        }
+      ]
+    },
+    "diff-no-synth:me": {
+      "name": "diff-no-synth:me",
+      "env": {
+        "PERSONAL_STACK_NAME": "$(whoami | tr -dc '[:alnum:]-' | cut -c 1-10)"
+      },
+      "steps": [
+        {
+          "exec": "cdk diff --profile veho-dev --fail=0 --progress=events --app 'cdk.out/' \"webhook-transformer-service-personal\" \"webhook-transformer-service-personal-*\""
+        }
+      ]
+    },
+    "diff-no-synth:prod": {
+      "name": "diff-no-synth:prod",
+      "steps": [
+        {
+          "exec": "cdk diff --profile veho-prod --fail=0 --progress=events --app 'cdk.out/' \"webhook-transformer-service-prod\" \"webhook-transformer-service-prod-*\""
+        }
+      ]
+    },
+    "diff-no-synth:staging": {
+      "name": "diff-no-synth:staging",
+      "steps": [
+        {
+          "exec": "cdk diff --profile veho-staging --fail=0 --progress=events --app 'cdk.out/' \"webhook-transformer-service-staging\" \"webhook-transformer-service-staging-*\""
+        }
+      ]
+    },
+    "diff:dev": {
+      "name": "diff:dev",
+      "steps": [
+        {
+          "exec": "cdk diff --profile veho-dev --fail=0 --progress=events \"webhook-transformer-service-dev\" \"webhook-transformer-service-dev-*\""
+        }
+      ]
+    },
+    "diff:me": {
+      "name": "diff:me",
+      "env": {
+        "PERSONAL_STACK_NAME": "$(whoami | tr -dc '[:alnum:]-' | cut -c 1-10)"
+      },
+      "steps": [
+        {
+          "exec": "cdk diff --profile veho-dev --fail=0 --progress=events \"webhook-transformer-service-personal\" \"webhook-transformer-service-personal-*\""
+        }
+      ]
+    },
+    "diff:prod": {
+      "name": "diff:prod",
+      "steps": [
+        {
+          "exec": "cdk diff --profile veho-prod --fail=0 --progress=events \"webhook-transformer-service-prod\" \"webhook-transformer-service-prod-*\""
+        }
+      ]
+    },
+    "diff:staging": {
+      "name": "diff:staging",
+      "steps": [
+        {
+          "exec": "cdk diff --profile veho-staging --fail=0 --progress=events \"webhook-transformer-service-staging\" \"webhook-transformer-service-staging-*\""
+        }
+      ]
+    },
+    "eject": {
+      "name": "eject",
+      "description": "Remove projen from the project",
+      "env": {
+        "PROJEN_EJECTING": "true"
+      },
+      "steps": [
+        {
+          "spawn": "default"
+        }
+      ]
+    },
+    "eslint": {
+      "name": "eslint",
+      "description": "Runs eslint against the codebase",
+      "env": {
+        "ESLINT_USE_FLAT_CONFIG": "false",
+        "NODE_NO_WARNINGS": "1"
+      },
+      "steps": [
+        {
+          "exec": "eslint --ext .ts,.tsx --fix --no-error-on-unmatched-pattern $@ src test build-tools projenrc .projenrc.ts",
+          "receiveArgs": true
+        }
+      ]
+    },
+    "husky:init": {
+      "name": "husky:init",
+      "steps": [
+        {
+          "exec": "husky"
+        }
+      ]
+    },
+    "install": {
+      "name": "install",
+      "description": "Install project dependencies and update lockfile (non-frozen)",
+      "steps": [
+        {
+          "exec": "pnpm i --no-frozen-lockfile"
+        }
+      ]
+    },
+    "install:ci": {
+      "name": "install:ci",
+      "description": "Install project dependencies using frozen lockfile",
+      "steps": [
+        {
+          "exec": "pnpm i --frozen-lockfile"
+        }
+      ]
+    },
+    "lint": {
+      "name": "lint",
+      "description": "Runs type checks and eslint",
+      "steps": [
+        {
+          "exec": "tsc --noEmit"
+        },
+        {
+          "exec": "eslint --ext .ts,.tsx --no-error-on-unmatched-pattern $@ src test build-tools",
+          "receiveArgs": true,
+          "env": {
+            "ESLINT_USE_FLAT_CONFIG": "false",
+            "NODE_NO_WARNINGS": "1"
+          }
+        }
+      ]
+    },
+    "lint:fix": {
+      "name": "lint:fix",
+      "env": {
+        "ESLINT_USE_FLAT_CONFIG": "false",
+        "NODE_NO_WARNINGS": "1"
+      },
+      "steps": [
+        {
+          "exec": "eslint --ext .ts,.tsx --fix --no-error-on-unmatched-pattern $@ src test build-tools",
+          "receiveArgs": true
+        }
+      ]
+    },
+    "lld:remove": {
+      "name": "lld:remove",
+      "description": "Detatch lambda-live-debugger from deployed lambdas defined in the lldebugger.config.ts file",
+      "env": {
+        "PERSONAL_STACK_NAME": "$(whoami | tr -dc '[:alnum:]-' | cut -c 1-10)"
+      },
+      "steps": [
+        {
+          "exec": "npx lld -r"
+        }
+      ]
+    },
+    "lld:vscode-snippet": {
+      "name": "lld:vscode-snippet",
+      "description": "Show .vscode/launch.json configuration for lambda-live-debugger",
+      "steps": [
+        {
+          "exec": "echo 'Add this to .vscode/launch.json'\necho ''\necho '{\n  \"version\": \"0.2.0\",\n  \"configurations\": [\n    {\n      \"name\": \"Lambda Live Debugger\",\n      \"type\": \"node\",\n      \"request\": \"launch\",\n      \"runtimeExecutable\": \"${workspaceFolder}/node_modules/.bin/lld\",\n      \"runtimeArgs\": [],\n      \"console\": \"integratedTerminal\",\n      \"skipFiles\": [\"<node_internals>/**\"],\n      \"env\": {\n        \"PERSONAL_STACK_NAME\": \"${env:USER}\"\n      }\n    }\n  ]\n}'"
+        }
+      ]
+    },
+    "notify-multitudes:prod": {
+      "name": "notify-multitudes:prod",
+      "steps": [
+        {
+          "exec": "if [ -n \"$MULTITUDES_TOKEN\" ]; then curl --request POST --url \"https://api.developer.multitudes.co/deployments\" -H \"Content-Type: application/json\" -H \"Authorization: $MULTITUDES_TOKEN\" --data \"{\\\"commitSha\\\": \\\"$CIRCLE_SHA1\\\", \\\"environmentName\\\":\\\"prod\\\"}\"; fi"
+        }
+      ]
+    },
+    "package": {
+      "name": "package",
+      "description": "Creates the distribution package"
+    },
+    "post-compile": {
+      "name": "post-compile",
+      "description": "Runs after successful compilation",
+      "steps": [
+        {
+          "spawn": "synth:silent"
+        }
+      ]
+    },
+    "post-upgrade": {
+      "name": "post-upgrade",
+      "description": "Runs after upgrading dependencies"
+    },
+    "postbuild": {
+      "name": "postbuild",
+      "steps": [
+        {
+          "exec": "npx @veho/dx-sdk webhook-transformer-service.postbuild.event"
+        }
+      ]
+    },
+    "postprepare": {
+      "name": "postprepare",
+      "steps": [
+        {
+          "exec": "npx @veho/dx-sdk webhook-transformer-service.postprepare.event"
+        }
+      ]
+    },
+    "postrelease": {
+      "name": "postrelease",
+      "steps": [
+        {
+          "exec": "npx @veho/dx-sdk webhook-transformer-service.postrelease.event"
+        }
+      ]
+    },
+    "postupgrade": {
+      "name": "postupgrade",
+      "steps": [
+        {
+          "exec": "npx @veho/dx-sdk webhook-transformer-service.postupgrade.event"
+        }
+      ]
+    },
+    "pre-compile": {
+      "name": "pre-compile",
+      "description": "Prepare the project for compilation"
+    },
+    "prepare": {
+      "name": "prepare",
+      "steps": [
+        {
+          "exec": "husky"
+        }
+      ]
+    },
+    "prewatch": {
+      "name": "prewatch",
+      "steps": [
+        {
+          "exec": "npx @veho/dx-sdk webhook-transformer-service.prewatch.event"
+        }
+      ]
+    },
+    "server": {
+      "name": "server",
+      "steps": [
+        {
+          "exec": "gaia server start"
+        }
+      ]
+    },
+    "synth": {
+      "name": "synth",
+      "description": "Synthesizes your cdk app into cdk.out",
+      "steps": [
+        {
+          "exec": "cdk synth"
+        }
+      ]
+    },
+    "synth:dev": {
+      "name": "synth:dev",
+      "steps": [
+        {
+          "exec": "cdk synth --profile veho-dev \"webhook-transformer-service-dev\" \"webhook-transformer-service-dev-*\""
+        }
+      ]
+    },
+    "synth:me": {
+      "name": "synth:me",
+      "env": {
+        "PERSONAL_STACK_NAME": "$(whoami | tr -dc '[:alnum:]-' | cut -c 1-10)"
+      },
+      "steps": [
+        {
+          "exec": "cdk synth --profile veho-dev \"webhook-transformer-service-personal\" \"webhook-transformer-service-personal-*\""
+        }
+      ]
+    },
+    "synth:prod": {
+      "name": "synth:prod",
+      "steps": [
+        {
+          "exec": "cdk synth --profile veho-prod \"webhook-transformer-service-prod\" \"webhook-transformer-service-prod-*\""
+        }
+      ]
+    },
+    "synth:silent": {
+      "name": "synth:silent",
+      "description": "Synthesizes your cdk app into cdk.out and suppresses the template in stdout (part of \"yarn build\")",
+      "steps": [
+        {
+          "exec": "cdk synth -q"
+        }
+      ]
+    },
+    "synth:staging": {
+      "name": "synth:staging",
+      "steps": [
+        {
+          "exec": "cdk synth --profile veho-staging \"webhook-transformer-service-staging\" \"webhook-transformer-service-staging-*\""
+        }
+      ]
+    },
+    "test": {
+      "name": "test",
+      "description": "Run tests",
+      "steps": [
+        {
+          "exec": "jest --passWithNoTests --updateSnapshot",
+          "receiveArgs": true
+        },
+        {
+          "spawn": "lint"
+        }
+      ]
+    },
+    "test:ci": {
+      "name": "test:ci",
+      "steps": [
+        {
+          "exec": "jest --passWithNoTests --config jest.ci.config.cjs",
+          "receiveArgs": true
+        },
+        {
+          "spawn": "lint"
+        }
+      ]
+    },
+    "test:e2e": {
+      "name": "test:e2e",
+      "steps": [
+        {
+          "exec": "jest --testPathPattern=/test/e2e/ --testPathIgnorePatterns=",
+          "receiveArgs": true
+        }
+      ]
+    },
+    "test:watch": {
+      "name": "test:watch",
+      "description": "Run jest in watch mode",
+      "steps": [
+        {
+          "exec": "jest --watch"
+        }
+      ]
+    },
+    "update-event-studio-service:dev": {
+      "name": "update-event-studio-service:dev",
+      "steps": [
+        {
+          "exec": "apiid=$(aws apigateway get-rest-apis --profile veho-dev --region us-east-1 --query \"items[?name=='event-studio-internal']|[0].id\" | tr -d '\"')\nif [ \"null\" = \"${apiid}\" ] || [ \"\" = \"${apiid}\" ]; then \n  echo \"event studio api not found!\"\nelse\n  resourceid=$(aws apigateway get-resources --profile veho-dev --region us-east-1 --rest-api-id $apiid --query \"items[?path=='/services']|[0].id\" | tr -d '\"')\n  if [ \"null\" = \"${resourceid}\" ] || [ \"\" = \"${apiid}\" ]; then\n      echo \"event studio services resource not found!\"\n  else\n    aws apigateway test-invoke-method --profile veho-dev --rest-api-id $apiid --resource-id $resourceid --http-method POST --body \"{\\\"repoName\\\":\\\"veho-technologies/webhook-transformer-service\\\",\\\"serviceName\\\":\\\"webhook-transformer-service\\\"}\"\n  fi\nfi"
+        }
+      ]
+    },
+    "update-event-studio-service:prod": {
+      "name": "update-event-studio-service:prod",
+      "steps": [
+        {
+          "exec": "apiid=$(aws apigateway get-rest-apis --profile veho-prod --region us-east-1 --query \"items[?name=='event-studio-internal']|[0].id\" | tr -d '\"')\nif [ \"null\" = \"${apiid}\" ] || [ \"\" = \"${apiid}\" ]; then \n  echo \"event studio api not found!\"\nelse\n  resourceid=$(aws apigateway get-resources --profile veho-prod --region us-east-1 --rest-api-id $apiid --query \"items[?path=='/services']|[0].id\" | tr -d '\"')\n  if [ \"null\" = \"${resourceid}\" ] || [ \"\" = \"${apiid}\" ]; then\n      echo \"event studio services resource not found!\"\n  else\n    aws apigateway test-invoke-method --profile veho-prod --rest-api-id $apiid --resource-id $resourceid --http-method POST --body \"{\\\"repoName\\\":\\\"veho-technologies/webhook-transformer-service\\\",\\\"serviceName\\\":\\\"webhook-transformer-service\\\"}\"\n  fi\nfi"
+        }
+      ]
+    },
+    "update-event-studio-service:staging": {
+      "name": "update-event-studio-service:staging",
+      "steps": [
+        {
+          "exec": "apiid=$(aws apigateway get-rest-apis --profile veho-staging --region us-east-1 --query \"items[?name=='event-studio-internal']|[0].id\" | tr -d '\"')\nif [ \"null\" = \"${apiid}\" ] || [ \"\" = \"${apiid}\" ]; then \n  echo \"event studio api not found!\"\nelse\n  resourceid=$(aws apigateway get-resources --profile veho-staging --region us-east-1 --rest-api-id $apiid --query \"items[?path=='/services']|[0].id\" | tr -d '\"')\n  if [ \"null\" = \"${resourceid}\" ] || [ \"\" = \"${apiid}\" ]; then\n      echo \"event studio services resource not found!\"\n  else\n    aws apigateway test-invoke-method --profile veho-staging --rest-api-id $apiid --resource-id $resourceid --http-method POST --body \"{\\\"repoName\\\":\\\"veho-technologies/webhook-transformer-service\\\",\\\"serviceName\\\":\\\"webhook-transformer-service\\\"}\"\n  fi\nfi"
+        }
+      ]
+    },
+    "upgrade": {
+      "name": "upgrade",
+      "description": "upgrade dependencies",
+      "env": {
+        "CI": "0"
+      },
+      "steps": [
+        {
+          "exec": "pnpm dlx npm-check-updates@18 --upgrade --target=minor --peer --no-deprecated --dep=dev,peer,prod,optional --filter=@types/aws-lambda,@types/jest,@veho/dx-sdk,@veho/gaia-projen,esbuild-visualizer,eslint-config-prettier,eslint-import-resolver-typescript,eslint-plugin-import,eslint-plugin-simple-import-sort,jest,lambda-live-debugger,projen,ts-jest,ts-node,typescript,@veho/cdk,@veho/events,@veho/observability-sdk"
+        },
+        {
+          "exec": "pnpm i --no-frozen-lockfile"
+        },
+        {
+          "exec": "pnpm update @types/aws-lambda @types/jest @types/node @typescript-eslint/eslint-plugin @typescript-eslint/parser @veho/dx-sdk @veho/gaia-projen aws-cdk esbuild-visualizer esbuild eslint-config-prettier eslint-import-resolver-typescript eslint-plugin-import eslint-plugin-prettier eslint-plugin-simple-import-sort eslint husky jest jest-junit lambda-live-debugger prettier projen ts-jest ts-node typescript @veho/cdk @veho/events @veho/observability-sdk aws-cdk-lib constructs"
+        },
+        {
+          "exec": "npx projen"
+        },
+        {
+          "spawn": "post-upgrade"
+        }
+      ]
+    },
+    "watch": {
+      "name": "watch",
+      "description": "Watches changes in your source code and rebuilds and deploys to the current account",
+      "steps": [
+        {
+          "exec": "cdk deploy --hotswap"
+        },
+        {
+          "exec": "cdk watch"
+        }
+      ]
+    },
+    "watch:dev": {
+      "name": "watch:dev",
+      "steps": [
+        {
+          "exec": "cdk watch --require-approval never --profile veho-dev \"webhook-transformer-service-dev\" \"webhook-transformer-service-dev-*\""
+        }
+      ]
+    },
+    "watch:me": {
+      "name": "watch:me",
+      "env": {
+        "PERSONAL_STACK_NAME": "$(whoami | tr -dc '[:alnum:]-' | cut -c 1-10)"
+      },
+      "steps": [
+        {
+          "exec": "cdk watch --require-approval never --profile veho-dev \"webhook-transformer-service-personal\" \"webhook-transformer-service-personal-*\""
+        }
+      ]
+    }
+  },
+  "env": {
+    "PATH": "$(pnpm -c exec \"node --print process.env.PATH\")"
+  },
+  "//": "~~ Generated by projen. To modify, edit .projenrc.ts and run \"npx projen\"."
+}
