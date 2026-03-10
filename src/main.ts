@@ -3,9 +3,9 @@ import { App } from 'aws-cdk-lib'
 import { MyStack } from './stacks/stack'
 
 const TAGS = {
-  // Service: 'webhook-transformer-service',
-  // Team: 'delivery',
-  // ProductArea: 'live-routes',
+  Service: 'webhook-transformer-service',
+  Team: 'growth',
+  ProductArea: 'client-operations',
 }
 
 const app = new App()
@@ -36,6 +36,8 @@ for (const [envName, env] of Object.entries(envs)) {
     stackName: 'webhook-transformer-service',
     appEnvironment: envName,
     serviceName: 'webhook-transformer-service',
+    teamName: 'growth',
+    isEphemeral: false,
     env: { region, account: env.account },
     tags: TAGS,
   })
@@ -48,6 +50,7 @@ if (personalStackName) {
     env: { account: envs.dev.account, region },
     appEnvironment: `ephemeral-${personalStackName}`,
     serviceName: 'webhook-transformer-service',
+    teamName: 'growth',
     tags: TAGS,
     isEphemeral: true,
   })

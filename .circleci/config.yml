@@ -9,7 +9,7 @@ orbs:
 jobs:
   test:
     docker:
-      - image: cimg/node:20.9.0
+      - image: cimg/node:22
     resource_class: large
     environment:
       NODE_OPTIONS: --max-old-space-size=6144
@@ -52,7 +52,7 @@ jobs:
           channel: _circleci
   synth:
     docker:
-      - image: cimg/node:20.9.0
+      - image: cimg/node:22
     resource_class: medium
     steps:
       - checkout:
@@ -79,7 +79,7 @@ jobs:
           path: cdk.out
   deploy-dev:
     docker:
-      - image: cimg/node:20.9.0
+      - image: cimg/node:22
     resource_class: small
     steps:
       - checkout:
@@ -108,7 +108,7 @@ jobs:
           channel: _circleci
   deploy-staging:
     docker:
-      - image: cimg/node:20.9.0
+      - image: cimg/node:22
     resource_class: small
     steps:
       - checkout:
@@ -137,7 +137,7 @@ jobs:
           channel: _circleci
   diff-prod:
     docker:
-      - image: cimg/node:20.9.0
+      - image: cimg/node:22
     resource_class: small
     steps:
       - checkout:
@@ -169,7 +169,7 @@ jobs:
   post-prod-diff-to-pr:
     resource_class: small
     docker:
-      - image: cimg/node:20.9.0
+      - image: cimg/node:22
     steps:
       - run:
           name: Install cdk-notifier
@@ -187,7 +187,7 @@ jobs:
             cdk-notifier --template extendedWithResources -t prod -l cdk.log
   deploy-prod:
     docker:
-      - image: cimg/node:20.9.0
+      - image: cimg/node:22
     resource_class: small
     steps:
       - checkout:

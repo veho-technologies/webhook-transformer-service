@@ -69,7 +69,7 @@
   "devDependencies": {
     "@types/aws-lambda": "^8.10.161",
     "@types/jest": "^30.0.0",
-    "@types/node": "^20",
+    "@types/node": "^22",
     "@typescript-eslint/eslint-plugin": "8",
     "@typescript-eslint/parser": "^8",
     "@veho/dx-sdk": "^1.0.9",
@@ -102,7 +102,7 @@
   },
   "pnpm": {},
   "engines": {
-    "node": ">= 20.9.0"
+    "node": ">= 22.0.0"
   },
   "license": "UNLICENSED",
   "version": "0.0.0",

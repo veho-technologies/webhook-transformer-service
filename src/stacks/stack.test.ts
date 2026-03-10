@@ -8,6 +8,8 @@ test('Snapshot', () => {
   const stack = new MyStack(app, 'test', {
     appEnvironment: 'test',
     serviceName: 'test-service',
+    teamName: 'growth',
+    isEphemeral: false,
   })
 
   const template = Template.fromStack(stack)

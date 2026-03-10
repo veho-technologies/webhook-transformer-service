@@ -4,7 +4,7 @@
       "name": "analyze-bundle",
       "steps": [
         {
-          "exec": "arg=$@\n    if [ \"$arg\" == \"\" ]; \n    then echo \"\\033[0;31m Relative path to handler required!\"; \n    else\n    npx esbuild --bundle --metafile=analyzed_bundle.json --outfile=analyzed_bundle.js --platform=node --target=node20 --keep-names --minify $arg       && npx esbuild-visualizer --filename analyzed_bundle.html --open --metadata ./analyzed_bundle.json; \n    fi",
+          "exec": "arg=$@\n    if [ \"$arg\" == \"\" ]; \n    then echo \"\\033[0;31m Relative path to handler required!\"; \n    else\n    npx esbuild --bundle --metafile=analyzed_bundle.json --outfile=analyzed_bundle.js --platform=node --target=node22 --keep-names --minify $arg       && npx esbuild-visualizer --filename analyzed_bundle.html --open --metadata ./analyzed_bundle.json; \n    fi",
           "receiveArgs": true
         }
       ]
