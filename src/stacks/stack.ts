@@ -1,5 +1,5 @@
-import { TableV2, VehoStack, VehoStackProps } from '@veho/cdk'
-import { RemovalPolicy } from 'aws-cdk-lib'
+import { NodejsFunction, TableV2, VehoStack, VehoStackProps } from '@veho/cdk'
+import { Duration, RemovalPolicy } from 'aws-cdk-lib'
 import { Construct } from 'constructs'
 
 import { schema } from '../database/dynamo'
@@ -18,6 +18,15 @@ export class WebhookTransformerStack extends VehoStack {
     this.table = TableV2.fromOneTableSchema(this, 'Table', schema, {
       timeToLiveAttribute: 'timeToLive',
       removalPolicy: RemovalPolicy.RETAIN,
+    })
+
+    new NodejsFunction(this, 'DynamoSmokeTest', {
+      entry: 'src/handlers/dynamoSmokeTest.ts',
+      timeout: Duration.seconds(30),
+      environment: {
+        TABLE_NAME: this.table.tableName,
+      },
+      dynamoTables: [this.table],
     })
   }
 }
