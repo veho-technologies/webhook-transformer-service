@@ -9,6 +9,88 @@ exports[`Snapshot 1`] = `
       "Type": "AWS::SSM::Parameter::Value<String>",
     },
   },
+  "Resources": {
+    "TableCD117FA1": {
+      "DeletionPolicy": "RetainExceptOnCreate",
+      "Properties": {
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "pk",
+            "AttributeType": "S",
+          },
+          {
+            "AttributeName": "sk",
+            "AttributeType": "S",
+          },
+          {
+            "AttributeName": "gs1pk",
+            "AttributeType": "S",
+          },
+          {
+            "AttributeName": "gs1sk",
+            "AttributeType": "S",
+          },
+        ],
+        "BillingMode": "PAY_PER_REQUEST",
+        "GlobalSecondaryIndexes": [
+          {
+            "IndexName": "gs1",
+            "KeySchema": [
+              {
+                "AttributeName": "gs1pk",
+                "KeyType": "HASH",
+              },
+              {
+                "AttributeName": "gs1sk",
+                "KeyType": "RANGE",
+              },
+            ],
+            "Projection": {
+              "ProjectionType": "ALL",
+            },
+          },
+        ],
+        "KeySchema": [
+          {
+            "AttributeName": "pk",
+            "KeyType": "HASH",
+          },
+          {
+            "AttributeName": "sk",
+            "KeyType": "RANGE",
+          },
+        ],
+        "Replicas": [
+          {
+            "ContributorInsightsSpecification": {
+              "Enabled": false,
+            },
+            "DeletionProtectionEnabled": true,
+            "GlobalSecondaryIndexes": [
+              {
+                "ContributorInsightsSpecification": {
+                  "Enabled": false,
+                },
+                "IndexName": "gs1",
+              },
+            ],
+            "PointInTimeRecoverySpecification": {
+              "PointInTimeRecoveryEnabled": true,
+            },
+            "Region": {
+              "Ref": "AWS::Region",
+            },
+          },
+        ],
+        "TimeToLiveSpecification": {
+          "AttributeName": "timeToLive",
+          "Enabled": true,
+        },
+      },
+      "Type": "AWS::DynamoDB::GlobalTable",
+      "UpdateReplacePolicy": "Retain",
+    },
+  },
   "Rules": {
     "CheckBootstrapVersion": {
       "Assertions": [
