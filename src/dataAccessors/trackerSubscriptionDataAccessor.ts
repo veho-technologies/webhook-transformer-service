@@ -1,13 +1,11 @@
 import { TrackerSubscriptionEntity, TrackerSubscriptionModel } from '../database/dynamo'
 
-export type TrackerSubscription = TrackerSubscriptionEntity
-
 export const trackerSubscriptionDataAccessor = {
-  async getByTrackingNumber(trackingNumber: string): Promise<TrackerSubscription | undefined> {
+  async getByTrackingNumber(trackingNumber: string): Promise<TrackerSubscriptionEntity | undefined> {
     return TrackerSubscriptionModel.get({ trackingNumber })
   },
 
-  async create(subscription: TrackerSubscription): Promise<TrackerSubscription> {
+  async create(subscription: TrackerSubscriptionEntity): Promise<TrackerSubscriptionEntity> {
     return TrackerSubscriptionModel.create(subscription)
   },
 
@@ -15,7 +13,7 @@ export const trackerSubscriptionDataAccessor = {
     await TrackerSubscriptionModel.remove({ trackingNumber })
   },
 
-  async listByClientId(clientId: string): Promise<TrackerSubscription[]> {
-    return TrackerSubscriptionModel.find({ gs1pk: `client:${clientId}` }, { index: 'gs1' })
+  async listByClientId(clientId: string): Promise<TrackerSubscriptionEntity[]> {
+    return TrackerSubscriptionModel.find({ clientId }, { index: 'gs1' })
   },
 }

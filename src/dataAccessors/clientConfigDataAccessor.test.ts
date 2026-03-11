@@ -1,4 +1,5 @@
-import { ClientConfig, clientConfigDataAccessor } from './clientConfigDataAccessor'
+import { ClientConfigEntity } from '../database/dynamo'
+import { clientConfigDataAccessor } from './clientConfigDataAccessor'
 
 const mockGet = jest.fn()
 const mockUpsert = jest.fn()
@@ -13,7 +14,7 @@ jest.mock('../database/dynamo', () => ({
 }))
 
 describe('clientConfigDataAccessor', () => {
-  const mockConfig: ClientConfig = {
+  const mockConfig: ClientConfigEntity = {
     clientId: 'client-123',
     endpointType: 'shopify_graphql',
     endpointUrl: 'https://example.com/webhook',

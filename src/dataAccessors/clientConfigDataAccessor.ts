@@ -1,13 +1,11 @@
 import { ClientConfigEntity, ClientConfigModel } from '../database/dynamo'
 
-export type ClientConfig = ClientConfigEntity
-
 export const clientConfigDataAccessor = {
-  async getByClientId(clientId: string): Promise<ClientConfig | undefined> {
+  async getByClientId(clientId: string): Promise<ClientConfigEntity | undefined> {
     return ClientConfigModel.get({ clientId })
   },
 
-  async upsert(config: ClientConfig): Promise<ClientConfig> {
+  async upsert(config: ClientConfigEntity): Promise<ClientConfigEntity> {
     return ClientConfigModel.upsert(config)
   },
 

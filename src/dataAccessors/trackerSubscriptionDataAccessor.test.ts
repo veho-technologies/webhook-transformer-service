@@ -1,4 +1,5 @@
-import { TrackerSubscription, trackerSubscriptionDataAccessor } from './trackerSubscriptionDataAccessor'
+import { TrackerSubscriptionEntity } from '../database/dynamo'
+import { trackerSubscriptionDataAccessor } from './trackerSubscriptionDataAccessor'
 
 const mockGet = jest.fn()
 const mockCreate = jest.fn()
@@ -15,7 +16,7 @@ jest.mock('../database/dynamo', () => ({
 }))
 
 describe('trackerSubscriptionDataAccessor', () => {
-  const mockSubscription: TrackerSubscription = {
+  const mockSubscription: TrackerSubscriptionEntity = {
     trackingNumber: 'TRK-123',
     trackerReferenceId: 'ref-456',
     carrierId: 'carrier-789',
@@ -69,7 +70,7 @@ describe('trackerSubscriptionDataAccessor', () => {
       const result = await trackerSubscriptionDataAccessor.listByClientId('client-123')
 
       expect(result).toEqual([mockSubscription])
-      expect(mockFind).toHaveBeenCalledWith({ gs1pk: 'client:client-123' }, { index: 'gs1' })
+      expect(mockFind).toHaveBeenCalledWith({ clientId: 'client-123' }, { index: 'gs1' })
     })
   })
 })

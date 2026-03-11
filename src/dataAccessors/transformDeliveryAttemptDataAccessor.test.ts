@@ -1,4 +1,5 @@
-import { TransformDeliveryAttempt, transformDeliveryAttemptDataAccessor } from './transformDeliveryAttemptDataAccessor'
+import { TransformDeliveryAttemptEntity } from '../database/dynamo'
+import { transformDeliveryAttemptDataAccessor } from './transformDeliveryAttemptDataAccessor'
 
 const mockCreate = jest.fn()
 const mockFind = jest.fn()
@@ -11,7 +12,7 @@ jest.mock('../database/dynamo', () => ({
 }))
 
 describe('transformDeliveryAttemptDataAccessor', () => {
-  const mockAttemptInput: Omit<TransformDeliveryAttempt, 'id' | 'timeToLive'> = {
+  const mockAttemptInput: Omit<TransformDeliveryAttemptEntity, 'id' | 'timeToLive'> = {
     trackingNumber: 'TRK-123',
     clientId: 'client-123',
     trackerReferenceId: 'ref-456',
@@ -48,7 +49,7 @@ describe('transformDeliveryAttemptDataAccessor', () => {
       const result = await transformDeliveryAttemptDataAccessor.listByTrackingNumber('client-123', 'TRK-123', 10)
 
       expect(result).toEqual([mockAttempt])
-      expect(mockFind).toHaveBeenCalledWith({ pk: 'attempt:client-123:TRK-123' }, { limit: 10 })
+      expect(mockFind).toHaveBeenCalledWith({ clientId: 'client-123', trackingNumber: 'TRK-123' }, { limit: 10 })
     })
 
     it('should query without limit when not provided', async () => {
@@ -56,7 +57,7 @@ describe('transformDeliveryAttemptDataAccessor', () => {
 
       await transformDeliveryAttemptDataAccessor.listByTrackingNumber('client-123', 'TRK-123')
 
-      expect(mockFind).toHaveBeenCalledWith({ pk: 'attempt:client-123:TRK-123' }, { limit: undefined })
+      expect(mockFind).toHaveBeenCalledWith({ clientId: 'client-123', trackingNumber: 'TRK-123' }, { limit: undefined })
     })
   })
 })
