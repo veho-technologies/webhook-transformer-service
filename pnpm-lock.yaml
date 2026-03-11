@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@aws-sdk/client-dynamodb':
+        specifier: ^3.1005.0
+        version: 3.1005.0
       '@veho/cdk':
         specifier: ^15.4.0
         version: 15.4.0(aws-cdk-lib@2.241.0(constructs@10.5.1))(constructs@10.5.1)
@@ -20,9 +23,18 @@ importers:
       aws-cdk-lib:
         specifier: ^2.191.0
         version: 2.241.0(constructs@10.5.1)
+      aws-xray-sdk-core:
+        specifier: ^3.12.0
+        version: 3.12.0
       constructs:
         specifier: ^10.5.1
         version: 10.5.1
+      dynamodb-onetable:
+        specifier: ^2.7.7
+        version: 2.7.7
+      ulid:
+        specifier: ^3.0.2
+        version: 3.0.2
     devDependencies:
       '@types/aws-lambda':
         specifier: ^8.10.161
@@ -3636,6 +3648,10 @@ packages:
   uglify-js@3.19.3:
     resolution: {integrity: sha512-v3Xu+yuwBXisp6QYTcH4UbH+xYJXqnq2m/LtQVWKWzYc1iehYnLixoQDN9FH6/j9/oybfd6W9Ghwkl8+UMKTKQ==}
     engines: {node: '>=0.8.0'}
+    hasBin: true
+
+  ulid@3.0.2:
+    resolution: {integrity: sha512-yu26mwteFYzBAot7KVMqFGCVpsF6g8wXfJzQUHvu1no3+rRRSFcSV2nKeYvNPLD2J4b08jYBDhHUjeH0ygIl9w==}
     hasBin: true
 
   unbox-primitive@1.1.0:
@@ -8021,6 +8037,8 @@ snapshots:
 
   uglify-js@3.19.3:
     optional: true
+
+  ulid@3.0.2: {}
 
   unbox-primitive@1.1.0:
     dependencies:
