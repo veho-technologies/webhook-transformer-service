@@ -1,15 +1,19 @@
-import { ClientConfigEntity, ClientConfigModel } from '../database/dynamo'
+import { DeleteItemCommand, GetItemCommand, PutItemCommand } from 'dynamodb-toolbox'
+
+import { type ClientConfig, ClientConfigEntity } from '../database'
 
 export const clientConfigDataAccessor = {
-  async getByClientId(clientId: string): Promise<ClientConfigEntity | undefined> {
-    return ClientConfigModel.get({ clientId })
+  async getByClientId(clientId: string): Promise<ClientConfig | undefined> {
+    const { Item } = await ClientConfigEntity.build(GetItemCommand).key({ clientId }).send()
+    return Item
   },
 
-  async upsert(config: ClientConfigEntity): Promise<ClientConfigEntity> {
-    return ClientConfigModel.upsert(config)
+  async create(config: ClientConfig): Promise<ClientConfig> {
+    await ClientConfigEntity.build(PutItemCommand).item(config).send()
+    return config
   },
 
   async delete(clientId: string): Promise<void> {
-    await ClientConfigModel.remove({ clientId })
+    await ClientConfigEntity.build(DeleteItemCommand).key({ clientId }).send()
   },
 }

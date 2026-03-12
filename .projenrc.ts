@@ -13,8 +13,9 @@ const project = new GaiaCdkApp({
   projenrcTs: true,
 
   deps: [
-    'dynamodb-onetable',
+    'dynamodb-toolbox',
     '@aws-sdk/client-dynamodb',
+    '@aws-sdk/lib-dynamodb',
     'aws-xray-sdk-core',
     'ulid',
   ],

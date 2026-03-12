@@ -115,6 +115,10 @@
       "type": "runtime"
     },
     {
+      "name": "@aws-sdk/lib-dynamodb",
+      "type": "runtime"
+    },
+    {
       "name": "@veho/cdk",
       "type": "runtime"
     },
@@ -141,7 +145,7 @@
       "type": "runtime"
     },
     {
-      "name": "dynamodb-onetable",
+      "name": "dynamodb-toolbox",
       "type": "runtime"
     },
     {

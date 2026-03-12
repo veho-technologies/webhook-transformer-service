@@ -77,6 +77,40 @@ exports[`Snapshot 1`] = `
     },
   },
   "Resources": {
+    "ClientConfigTableE705763C": {
+      "DeletionPolicy": "RetainExceptOnCreate",
+      "Properties": {
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "clientId",
+            "AttributeType": "S",
+          },
+        ],
+        "BillingMode": "PAY_PER_REQUEST",
+        "KeySchema": [
+          {
+            "AttributeName": "clientId",
+            "KeyType": "HASH",
+          },
+        ],
+        "Replicas": [
+          {
+            "ContributorInsightsSpecification": {
+              "Enabled": false,
+            },
+            "DeletionProtectionEnabled": true,
+            "PointInTimeRecoverySpecification": {
+              "PointInTimeRecoveryEnabled": true,
+            },
+            "Region": {
+              "Ref": "AWS::Region",
+            },
+          },
+        ],
+      },
+      "Type": "AWS::DynamoDB::GlobalTable",
+      "UpdateReplacePolicy": "Retain",
+    },
     "DynamoSmokeTest3E5D9377": {
       "DependsOn": [
         "DynamoSmokeTestServiceRoleDefaultPolicy566D35C3",
@@ -90,11 +124,14 @@ exports[`Snapshot 1`] = `
           "S3Bucket": {
             "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
           },
-          "S3Key": "8524b859e1fbc2247ca2ba3570636fc79a90b472da8de4be00b886514c21f0ec.zip",
+          "S3Key": "8a4e84f46b94994ea8eb9df46ce8d58f07f5a93c4fe9385eb073082f7e905c0d.zip",
         },
         "Environment": {
           "Variables": {
             "AWS_CRT_NODEJS_BINARY_RELATIVE_PATH": "bin/linux-arm64-glibc/aws-crt-nodejs.node",
+            "CLIENT_CONFIG_TABLE_NAME": {
+              "Ref": "ClientConfigTableE705763C",
+            },
             "ENVIRONMENT": "test",
             "EVENTBUS_ARN": {
               "Fn::Join": [
@@ -146,8 +183,11 @@ exports[`Snapshot 1`] = `
             "SSM_PARAMETER_STORE_TIMEOUT_MILLIS": "0",
             "SSM_PARAMETER_STORE_TTL": "300",
             "STACK_NAME": "test",
-            "TABLE_NAME": {
-              "Ref": "TableCD117FA1",
+            "TRACKER_SUBSCRIPTION_TABLE_NAME": {
+              "Ref": "TrackerSubscriptionTable408C8229",
+            },
+            "TRANSFORM_DELIVERY_ATTEMPT_TABLE_NAME": {
+              "Ref": "TransformDeliveryAttemptTable4673E1C9",
             },
           },
         },
@@ -291,10 +331,44 @@ exports[`Snapshot 1`] = `
                 "dynamodb:DescribeTable",
               ],
               "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "ClientConfigTableE705763C",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
+                "dynamodb:GetRecords",
+                "dynamodb:GetShardIterator",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "ClientConfigTableE705763C",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
+                "dynamodb:BatchGetItem",
+                "dynamodb:Query",
+                "dynamodb:GetItem",
+                "dynamodb:Scan",
+                "dynamodb:ConditionCheckItem",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:DescribeTable",
+              ],
+              "Effect": "Allow",
               "Resource": [
                 {
                   "Fn::GetAtt": [
-                    "TableCD117FA1",
+                    "TrackerSubscriptionTable408C8229",
                     "Arn",
                   ],
                 },
@@ -304,7 +378,7 @@ exports[`Snapshot 1`] = `
                     [
                       {
                         "Fn::GetAtt": [
-                          "TableCD117FA1",
+                          "TrackerSubscriptionTable408C8229",
                           "Arn",
                         ],
                       },
@@ -323,7 +397,7 @@ exports[`Snapshot 1`] = `
               "Resource": [
                 {
                   "Fn::GetAtt": [
-                    "TableCD117FA1",
+                    "TrackerSubscriptionTable408C8229",
                     "Arn",
                   ],
                 },
@@ -333,7 +407,7 @@ exports[`Snapshot 1`] = `
                     [
                       {
                         "Fn::GetAtt": [
-                          "TableCD117FA1",
+                          "TrackerSubscriptionTable408C8229",
                           "Arn",
                         ],
                       },
@@ -342,6 +416,40 @@ exports[`Snapshot 1`] = `
                   ],
                 },
               ],
+            },
+            {
+              "Action": [
+                "dynamodb:BatchGetItem",
+                "dynamodb:Query",
+                "dynamodb:GetItem",
+                "dynamodb:Scan",
+                "dynamodb:ConditionCheckItem",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:DescribeTable",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "TransformDeliveryAttemptTable4673E1C9",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
+                "dynamodb:GetRecords",
+                "dynamodb:GetShardIterator",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "TransformDeliveryAttemptTable4673E1C9",
+                  "Arn",
+                ],
+              },
             },
           ],
           "Version": "2012-10-17",
@@ -370,38 +478,34 @@ exports[`Snapshot 1`] = `
       "Type": "AWS::Logs::LogGroup",
       "UpdateReplacePolicy": "Retain",
     },
-    "TableCD117FA1": {
+    "TrackerSubscriptionTable408C8229": {
       "DeletionPolicy": "RetainExceptOnCreate",
       "Properties": {
         "AttributeDefinitions": [
           {
-            "AttributeName": "pk",
+            "AttributeName": "trackingNumber",
             "AttributeType": "S",
           },
           {
-            "AttributeName": "sk",
+            "AttributeName": "clientId",
             "AttributeType": "S",
           },
           {
-            "AttributeName": "gs1pk",
-            "AttributeType": "S",
-          },
-          {
-            "AttributeName": "gs1sk",
+            "AttributeName": "subscribedAt",
             "AttributeType": "S",
           },
         ],
         "BillingMode": "PAY_PER_REQUEST",
         "GlobalSecondaryIndexes": [
           {
-            "IndexName": "gs1",
+            "IndexName": "byClientId",
             "KeySchema": [
               {
-                "AttributeName": "gs1pk",
+                "AttributeName": "clientId",
                 "KeyType": "HASH",
               },
               {
-                "AttributeName": "gs1sk",
+                "AttributeName": "subscribedAt",
                 "KeyType": "RANGE",
               },
             ],
@@ -412,12 +516,8 @@ exports[`Snapshot 1`] = `
         ],
         "KeySchema": [
           {
-            "AttributeName": "pk",
+            "AttributeName": "trackingNumber",
             "KeyType": "HASH",
-          },
-          {
-            "AttributeName": "sk",
-            "KeyType": "RANGE",
           },
         ],
         "Replicas": [
@@ -431,9 +531,51 @@ exports[`Snapshot 1`] = `
                 "ContributorInsightsSpecification": {
                   "Enabled": false,
                 },
-                "IndexName": "gs1",
+                "IndexName": "byClientId",
               },
             ],
+            "PointInTimeRecoverySpecification": {
+              "PointInTimeRecoveryEnabled": true,
+            },
+            "Region": {
+              "Ref": "AWS::Region",
+            },
+          },
+        ],
+      },
+      "Type": "AWS::DynamoDB::GlobalTable",
+      "UpdateReplacePolicy": "Retain",
+    },
+    "TransformDeliveryAttemptTable4673E1C9": {
+      "DeletionPolicy": "RetainExceptOnCreate",
+      "Properties": {
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "clientIdTrackingNumber",
+            "AttributeType": "S",
+          },
+          {
+            "AttributeName": "id",
+            "AttributeType": "S",
+          },
+        ],
+        "BillingMode": "PAY_PER_REQUEST",
+        "KeySchema": [
+          {
+            "AttributeName": "clientIdTrackingNumber",
+            "KeyType": "HASH",
+          },
+          {
+            "AttributeName": "id",
+            "KeyType": "RANGE",
+          },
+        ],
+        "Replicas": [
+          {
+            "ContributorInsightsSpecification": {
+              "Enabled": false,
+            },
+            "DeletionProtectionEnabled": true,
             "PointInTimeRecoverySpecification": {
               "PointInTimeRecoveryEnabled": true,
             },

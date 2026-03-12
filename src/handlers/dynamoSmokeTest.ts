@@ -5,10 +5,10 @@ import { transformDeliveryAttemptDataAccessor } from '../dataAccessors/transform
 export const handler = async () => {
   const results: Record<string, unknown> = {}
 
-  // --- ClientConfig: upsert, get, delete ---
+  // --- ClientConfig: create, get, delete ---
   const clientId = `smoke-test-${Date.now()}`
 
-  const config = await clientConfigDataAccessor.upsert({
+  const config = await clientConfigDataAccessor.create({
     clientId,
     endpointType: 'shopify_graphql',
     endpointUrl: 'https://example.com/webhook',

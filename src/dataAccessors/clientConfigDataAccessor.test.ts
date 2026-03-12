@@ -1,20 +1,19 @@
-import { ClientConfigEntity } from '../database/dynamo'
+import { DeleteItemCommand, GetItemCommand, PutItemCommand } from 'dynamodb-toolbox'
+
+import type { ClientConfig } from '../database'
 import { clientConfigDataAccessor } from './clientConfigDataAccessor'
 
-const mockGet = jest.fn()
-const mockUpsert = jest.fn()
-const mockRemove = jest.fn()
+const mockSend = jest.fn()
+const mockKey = jest.fn().mockReturnValue({ send: mockSend })
+const mockItem = jest.fn().mockReturnValue({ send: mockSend })
+const mockBuild = jest.fn().mockReturnValue({ key: mockKey, item: mockItem })
 
-jest.mock('../database/dynamo', () => ({
-  ClientConfigModel: {
-    get: (...args: unknown[]) => mockGet(...args),
-    upsert: (...args: unknown[]) => mockUpsert(...args),
-    remove: (...args: unknown[]) => mockRemove(...args),
-  },
+jest.mock('../database', () => ({
+  ClientConfigEntity: { build: (...args: unknown[]) => mockBuild(...args) },
 }))
 
 describe('clientConfigDataAccessor', () => {
-  const mockConfig: ClientConfigEntity = {
+  const mockConfig: ClientConfig = {
     clientId: 'client-123',
     endpointType: 'shopify_graphql',
     endpointUrl: 'https://example.com/webhook',
@@ -23,18 +22,21 @@ describe('clientConfigDataAccessor', () => {
     statusMap: { delivered: 'delivered', in_transit: 'in_transit' },
   }
 
+  beforeEach(() => jest.clearAllMocks())
+
   describe('getByClientId', () => {
     it('should return the item when found', async () => {
-      mockGet.mockResolvedValue(mockConfig)
+      mockSend.mockResolvedValue({ Item: mockConfig })
 
       const result = await clientConfigDataAccessor.getByClientId('client-123')
 
       expect(result).toEqual(mockConfig)
-      expect(mockGet).toHaveBeenCalledWith({ clientId: 'client-123' })
+      expect(mockBuild).toHaveBeenCalledWith(GetItemCommand)
+      expect(mockKey).toHaveBeenCalledWith({ clientId: 'client-123' })
     })
 
     it('should return undefined when not found', async () => {
-      mockGet.mockResolvedValue(undefined)
+      mockSend.mockResolvedValue({ Item: undefined })
 
       const result = await clientConfigDataAccessor.getByClientId('nonexistent')
 
@@ -42,23 +44,26 @@ describe('clientConfigDataAccessor', () => {
     })
   })
 
-  describe('upsert', () => {
-    it('should call model.upsert with correct data', async () => {
-      mockUpsert.mockResolvedValue(mockConfig)
+  describe('create', () => {
+    it('should put item and return input', async () => {
+      mockSend.mockResolvedValue({})
 
-      await clientConfigDataAccessor.upsert(mockConfig)
+      const result = await clientConfigDataAccessor.create(mockConfig)
 
-      expect(mockUpsert).toHaveBeenCalledWith(mockConfig)
+      expect(result).toEqual(mockConfig)
+      expect(mockBuild).toHaveBeenCalledWith(PutItemCommand)
+      expect(mockItem).toHaveBeenCalledWith(mockConfig)
     })
   })
 
   describe('delete', () => {
-    it('should call model.remove with clientId', async () => {
-      mockRemove.mockResolvedValue(undefined)
+    it('should call DeleteItemCommand with key', async () => {
+      mockSend.mockResolvedValue({})
 
       await clientConfigDataAccessor.delete('client-123')
 
-      expect(mockRemove).toHaveBeenCalledWith({ clientId: 'client-123' })
+      expect(mockBuild).toHaveBeenCalledWith(DeleteItemCommand)
+      expect(mockKey).toHaveBeenCalledWith({ clientId: 'client-123' })
     })
   })
 })

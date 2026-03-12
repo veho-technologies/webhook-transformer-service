@@ -1,18 +1,26 @@
-import { TransformDeliveryAttemptEntity } from '../database/dynamo'
+import { PutItemCommand, QueryCommand } from 'dynamodb-toolbox'
+
+import type { TransformDeliveryAttempt } from '../database'
 import { transformDeliveryAttemptDataAccessor } from './transformDeliveryAttemptDataAccessor'
 
-const mockCreate = jest.fn()
-const mockFind = jest.fn()
+const mockSend = jest.fn()
+const mockItem = jest.fn().mockReturnValue({ send: mockSend })
+const mockBuild = jest.fn().mockReturnValue({ item: mockItem })
 
-jest.mock('../database/dynamo', () => ({
-  TransformDeliveryAttemptModel: {
-    create: (...args: unknown[]) => mockCreate(...args),
-    find: (...args: unknown[]) => mockFind(...args),
-  },
+const mockOptions = jest.fn().mockReturnValue({ send: mockSend })
+const mockEntities = jest.fn().mockReturnValue({ send: mockSend, options: mockOptions })
+const mockQuery = jest.fn().mockReturnValue({ entities: mockEntities })
+const mockTableBuild = jest.fn().mockReturnValue({ query: mockQuery })
+
+jest.mock('../database', () => ({
+  TransformDeliveryAttemptEntity: { build: (...args: unknown[]) => mockBuild(...args) },
+  transformDeliveryAttemptTable: { build: (...args: unknown[]) => mockTableBuild(...args) },
 }))
 
+jest.mock('ulid', () => ({ ulid: () => 'mock-ulid-123' }))
+
 describe('transformDeliveryAttemptDataAccessor', () => {
-  const mockAttemptInput: Omit<TransformDeliveryAttemptEntity, 'id' | 'timeToLive'> = {
+  const mockAttemptInput: Omit<TransformDeliveryAttempt, 'id' | 'timeToLive' | 'clientIdTrackingNumber'> = {
     trackingNumber: 'TRK-123',
     clientId: 'client-123',
     trackerReferenceId: 'ref-456',
@@ -23,18 +31,29 @@ describe('transformDeliveryAttemptDataAccessor', () => {
     occurredAt: '2024-01-01T00:00:00.000Z',
   }
 
+  beforeEach(() => jest.clearAllMocks())
+
   describe('create', () => {
-    it('should set timeToLive to ~30 days from now', async () => {
+    it('should set id via ulid and timeToLive to ~30 days from now', async () => {
       const now = Date.now()
       jest.spyOn(Date, 'now').mockReturnValue(now)
-      mockCreate.mockResolvedValue({})
+      mockSend.mockResolvedValue({})
 
-      await transformDeliveryAttemptDataAccessor.create(mockAttemptInput)
+      const result = await transformDeliveryAttemptDataAccessor.create(mockAttemptInput)
 
       const expectedTtl = Math.floor(now / 1000) + 30 * 24 * 60 * 60
-      expect(mockCreate).toHaveBeenCalledWith({
+      expect(mockBuild).toHaveBeenCalledWith(PutItemCommand)
+      expect(mockItem).toHaveBeenCalledWith({
         ...mockAttemptInput,
+        id: 'mock-ulid-123',
         timeToLive: expectedTtl,
+        clientIdTrackingNumber: 'client-123#TRK-123',
+      })
+      expect(result).toEqual({
+        ...mockAttemptInput,
+        id: 'mock-ulid-123',
+        timeToLive: expectedTtl,
+        clientIdTrackingNumber: 'client-123#TRK-123',
       })
 
       jest.restoreAllMocks()
@@ -42,22 +61,30 @@ describe('transformDeliveryAttemptDataAccessor', () => {
   })
 
   describe('listByTrackingNumber', () => {
-    it('should query by pk with limit', async () => {
-      const mockAttempt = { ...mockAttemptInput, id: 'ulid-123', timeToLive: 1234567890 }
-      mockFind.mockResolvedValue([mockAttempt])
+    it('should query by composite key with limit', async () => {
+      const mockAttempt = {
+        ...mockAttemptInput,
+        id: 'ulid-123',
+        timeToLive: 1234567890,
+        clientIdTrackingNumber: 'client-123#TRK-123',
+      }
+      mockSend.mockResolvedValue({ Items: [mockAttempt] })
 
       const result = await transformDeliveryAttemptDataAccessor.listByTrackingNumber('client-123', 'TRK-123', 10)
 
       expect(result).toEqual([mockAttempt])
-      expect(mockFind).toHaveBeenCalledWith({ clientId: 'client-123', trackingNumber: 'TRK-123' }, { limit: 10 })
+      expect(mockTableBuild).toHaveBeenCalledWith(QueryCommand)
+      expect(mockQuery).toHaveBeenCalledWith({ partition: 'client-123#TRK-123' })
+      expect(mockOptions).toHaveBeenCalledWith({ limit: 10 })
     })
 
     it('should query without limit when not provided', async () => {
-      mockFind.mockResolvedValue([])
+      mockSend.mockResolvedValue({ Items: [] })
 
       await transformDeliveryAttemptDataAccessor.listByTrackingNumber('client-123', 'TRK-123')
 
-      expect(mockFind).toHaveBeenCalledWith({ clientId: 'client-123', trackingNumber: 'TRK-123' }, { limit: undefined })
+      expect(mockQuery).toHaveBeenCalledWith({ partition: 'client-123#TRK-123' })
+      expect(mockOptions).not.toHaveBeenCalled()
     })
   })
 })
