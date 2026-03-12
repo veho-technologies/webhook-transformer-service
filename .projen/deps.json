@@ -111,6 +111,14 @@
       "type": "build"
     },
     {
+      "name": "@aws-sdk/client-dynamodb",
+      "type": "runtime"
+    },
+    {
+      "name": "@aws-sdk/lib-dynamodb",
+      "type": "runtime"
+    },
+    {
       "name": "@veho/cdk",
       "type": "runtime"
     },
@@ -128,8 +136,20 @@
       "type": "runtime"
     },
     {
+      "name": "aws-xray-sdk-core",
+      "type": "runtime"
+    },
+    {
       "name": "constructs",
       "version": "^10.5.1",
+      "type": "runtime"
+    },
+    {
+      "name": "dynamodb-toolbox",
+      "type": "runtime"
+    },
+    {
+      "name": "ulid",
       "type": "runtime"
     }
   ],

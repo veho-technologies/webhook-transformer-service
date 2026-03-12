@@ -1,6 +1,6 @@
 import { App } from 'aws-cdk-lib'
 
-import { MyStack } from './stacks/stack'
+import { WebhookTransformerStack } from './stacks/stack'
 
 const TAGS = {
   Service: 'webhook-transformer-service',
@@ -32,7 +32,7 @@ const envs: Record<
 }
 
 for (const [envName, env] of Object.entries(envs)) {
-  new MyStack(app, `webhook-transformer-service-${envName}`, {
+  new WebhookTransformerStack(app, `webhook-transformer-service-${envName}`, {
     stackName: 'webhook-transformer-service',
     appEnvironment: envName,
     serviceName: 'webhook-transformer-service',
@@ -46,7 +46,7 @@ for (const [envName, env] of Object.entries(envs)) {
 // PERSONAL STACK
 const personalStackName = process.env.PERSONAL_STACK_NAME
 if (personalStackName) {
-  new MyStack(app, `webhook-transformer-service-personal-${personalStackName}`, {
+  new WebhookTransformerStack(app, `webhook-transformer-service-personal-${personalStackName}`, {
     env: { account: envs.dev.account, region },
     appEnvironment: `ephemeral-${personalStackName}`,
     serviceName: 'webhook-transformer-service',
