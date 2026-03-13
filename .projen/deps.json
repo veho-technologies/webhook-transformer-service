@@ -127,12 +127,20 @@
       "type": "runtime"
     },
     {
+      "name": "@veho/merged-api",
+      "type": "runtime"
+    },
+    {
       "name": "@veho/observability-sdk",
       "type": "runtime"
     },
     {
       "name": "aws-cdk-lib",
       "version": "^2.191.0",
+      "type": "runtime"
+    },
+    {
+      "name": "aws-sigv4-fetch",
       "type": "runtime"
     },
     {
@@ -146,6 +154,14 @@
     },
     {
       "name": "dynamodb-toolbox",
+      "type": "runtime"
+    },
+    {
+      "name": "graphql",
+      "type": "runtime"
+    },
+    {
+      "name": "graphql-request",
       "type": "runtime"
     },
     {

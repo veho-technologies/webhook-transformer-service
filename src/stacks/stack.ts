@@ -1,11 +1,11 @@
 import { NodejsFunction, TableV2, VehoStack, VehoStackProps } from '@veho/cdk'
 import { Duration, RemovalPolicy } from 'aws-cdk-lib'
 import { AttributeType } from 'aws-cdk-lib/aws-dynamodb'
+import { ManagedPolicy } from 'aws-cdk-lib/aws-iam'
 import { Construct } from 'constructs'
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface WebhookTransformerStackProps extends VehoStackProps {
-  // define additional props here...
+  mergedApiUrl: string
 }
 
 export class WebhookTransformerStack extends VehoStack {
@@ -13,8 +13,14 @@ export class WebhookTransformerStack extends VehoStack {
   public readonly trackerSubscriptionTable: TableV2
   public readonly transformDeliveryAttemptTable: TableV2
 
-  constructor(scope: Construct, id: string, { ...props }: WebhookTransformerStackProps) {
+  constructor(scope: Construct, id: string, { mergedApiUrl, ...props }: WebhookTransformerStackProps) {
     super(scope, id, props)
+
+    const mergedApiReadPolicy = ManagedPolicy.fromManagedPolicyName(
+      this,
+      'MergedApiReadPolicy',
+      'merged-api-ReadApiPolicy'
+    )
 
     this.clientConfigTable = new TableV2(this, 'ClientConfigTable', {
       partitionKey: { name: 'clientId', type: AttributeType.STRING },
@@ -44,6 +50,7 @@ export class WebhookTransformerStack extends VehoStack {
       removalPolicy: RemovalPolicy.RETAIN,
     })
 
+    // Testing only — remove once real handlers are wired up
     new NodejsFunction(this, 'DynamoSmokeTest', {
       entry: 'src/handlers/dynamoSmokeTest.ts',
       timeout: Duration.seconds(30),
@@ -53,6 +60,16 @@ export class WebhookTransformerStack extends VehoStack {
         TRANSFORM_DELIVERY_ATTEMPT_TABLE_NAME: this.transformDeliveryAttemptTable.tableName,
       },
       dynamoTables: [this.clientConfigTable, this.trackerSubscriptionTable, this.transformDeliveryAttemptTable],
+    })
+
+    // Testing only — remove once real handlers are wired up
+    new NodejsFunction(this, 'LugusSmoke', {
+      entry: 'src/handlers/lugusSmoke.ts',
+      timeout: Duration.seconds(30),
+      environment: {
+        MERGED_API_URL: mergedApiUrl,
+      },
+      managedPolicies: [mergedApiReadPolicy],
     })
   }
 }
