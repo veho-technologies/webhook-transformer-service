@@ -136,6 +136,10 @@
       "type": "runtime"
     },
     {
+      "name": "aws-sigv4-fetch",
+      "type": "runtime"
+    },
+    {
       "name": "aws-xray-sdk-core",
       "type": "runtime"
     },
@@ -146,6 +150,14 @@
     },
     {
       "name": "dynamodb-toolbox",
+      "type": "runtime"
+    },
+    {
+      "name": "graphql",
+      "type": "runtime"
+    },
+    {
+      "name": "graphql-request",
       "type": "runtime"
     },
     {
