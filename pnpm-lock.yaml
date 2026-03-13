@@ -20,6 +20,9 @@ importers:
       '@veho/events':
         specifier: ^4.5.0
         version: 4.5.0
+      '@veho/merged-api':
+        specifier: ^0.0.980
+        version: 0.0.980
       '@veho/observability-sdk':
         specifier: ^5.0.14
         version: 5.0.14(@opentelemetry/api@1.9.0)(aws-xray-sdk-core@3.12.0)(aws-xray-sdk@3.12.0)(dynamodb-onetable@2.7.7)(newrelic@13.15.0)
@@ -1667,6 +1670,10 @@ packages:
       - '@mrgrain/jsii-struct-builder'
       - commander
       - semver
+
+  '@veho/merged-api@0.0.980':
+    resolution: {integrity: sha512-rkfWGzUrTQQYnkq5ryE/CqjTFZaV6kPFPOCmngNoFGPc98u6iXtQYuWgEAIr0ykr6DfvNI/+RFU+EbnWLMIB4g==}
+    engines: {node: '>= 24.11.1'}
 
   '@veho/observability-sdk@5.0.14':
     resolution: {integrity: sha512-y40sLs5pVzBZ090gbnqSNXFMblf5vsapz7KIkcuUnEARcz4NKDbSzo54rR9ioefDro3IPm6zgN+99gYZ5RlvUA==}
@@ -5782,6 +5789,8 @@ snapshots:
     dependencies:
       constructs: 10.5.1
       projen: 0.99.19(constructs@10.5.1)
+
+  '@veho/merged-api@0.0.980': {}
 
   '@veho/observability-sdk@5.0.14(@opentelemetry/api@1.9.0)(aws-xray-sdk-core@3.12.0)(aws-xray-sdk@3.12.0)(dynamodb-onetable@2.7.7)(newrelic@13.15.0)':
     dependencies:

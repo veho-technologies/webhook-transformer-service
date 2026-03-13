@@ -127,6 +127,10 @@
       "type": "runtime"
     },
     {
+      "name": "@veho/merged-api",
+      "type": "runtime"
+    },
+    {
       "name": "@veho/observability-sdk",
       "type": "runtime"
     },

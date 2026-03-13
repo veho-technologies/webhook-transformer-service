@@ -11,6 +11,13 @@ const TAGS = {
 const app = new App()
 const region = 'us-east-1'
 
+const MERGED_API_URLS: Record<string, string> = {
+  dev: 'https://graph.dev.shipveho.com/graphql',
+  staging: 'https://graph.staging.shipveho.com/graphql',
+  prod: 'https://graph.shipveho.com/graphql',
+  sandbox: 'https://graph.sandbox.shipveho.com/graphql',
+}
+
 const envs: Record<
   string,
   {
@@ -40,6 +47,7 @@ for (const [envName, env] of Object.entries(envs)) {
     isEphemeral: false,
     env: { region, account: env.account },
     tags: TAGS,
+    mergedApiUrl: MERGED_API_URLS[envName],
   })
 }
 
@@ -53,6 +61,7 @@ if (personalStackName) {
     teamName: 'growth',
     tags: TAGS,
     isEphemeral: true,
+    mergedApiUrl: MERGED_API_URLS.dev,
   })
 }
 

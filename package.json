@@ -98,6 +98,7 @@
     "@aws-sdk/lib-dynamodb": "^3.1007.0",
     "@veho/cdk": "^15.4.0",
     "@veho/events": "^4.5.0",
+    "@veho/merged-api": "^0.0.980",
     "@veho/observability-sdk": "^5.0.14",
     "aws-cdk-lib": "^2.191.0",
     "aws-sigv4-fetch": "^4.4.1",

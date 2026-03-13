@@ -10,6 +10,7 @@ test('Snapshot', () => {
     serviceName: 'test-service',
     teamName: 'growth',
     isEphemeral: false,
+    mergedApiUrl: 'https://graph.dev.shipveho.com/graphql',
   })
 
   const template = Template.fromStack(stack)

@@ -478,6 +478,247 @@ exports[`Snapshot 1`] = `
       "Type": "AWS::Logs::LogGroup",
       "UpdateReplacePolicy": "Retain",
     },
+    "LugusSmoke827D9A7E": {
+      "DependsOn": [
+        "LugusSmokeServiceRoleDefaultPolicyA4DE00C1",
+        "LugusSmokeServiceRole81BD16B1",
+      ],
+      "Properties": {
+        "Architectures": [
+          "arm64",
+        ],
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "8cf4f1aa46c91dcbd60c50fda534e005e438f21f77edcfa0ca58c213b39bbb2d.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "AWS_CRT_NODEJS_BINARY_RELATIVE_PATH": "bin/linux-arm64-glibc/aws-crt-nodejs.node",
+            "ENVIRONMENT": "test",
+            "EVENTBUS_ARN": {
+              "Fn::Join": [
+                "",
+                [
+                  "arn:",
+                  {
+                    "Ref": "AWS::Partition",
+                  },
+                  ":events:",
+                  {
+                    "Ref": "AWS::Region",
+                  },
+                  ":",
+                  {
+                    "Ref": "AWS::AccountId",
+                  },
+                  ":event-bus/bifrost",
+                ],
+              ],
+            },
+            "LOG_LEVEL": "info",
+            "MERGED_API_URL": "https://graph.dev.shipveho.com/graphql",
+            "NEW_RELIC_ACCOUNT_ID": "3433923",
+            "NEW_RELIC_EXTENSION_LOG_LEVEL": "INFO",
+            "NEW_RELIC_EXTENSION_SEND_EXTENSION_LOGS": "false",
+            "NEW_RELIC_EXTENSION_SEND_FUNCTION_LOGS": "true",
+            "NEW_RELIC_LAMBDA_HANDLER": "index.handler",
+            "NODE_ENV": "production",
+            "NR_TAGS": {
+              "Fn::Join": [
+                "",
+                [
+                  "service:test-service;region:",
+                  {
+                    "Ref": "AWS::Region",
+                  },
+                  ";environment:test;team:growth",
+                ],
+              ],
+            },
+            "PARAMETERS_SECRETS_EXTENSION_CACHE_ENABLED": "true",
+            "PARAMETERS_SECRETS_EXTENSION_CACHE_SIZE": "1000",
+            "PARAMETERS_SECRETS_EXTENSION_HTTP_PORT": "2773",
+            "PARAMETERS_SECRETS_EXTENSION_LOG_LEVEL": "warn",
+            "PARAMETERS_SECRETS_EXTENSION_MAX_CONNECTIONS": "3",
+            "SECRETS_MANAGER_TIMEOUT_MILLIS": "0",
+            "SECRETS_MANAGER_TTL": "300",
+            "SERVICE_NAME": "test-service",
+            "SSM_PARAMETER_STORE_TIMEOUT_MILLIS": "0",
+            "SSM_PARAMETER_STORE_TTL": "300",
+            "STACK_NAME": "test",
+          },
+        },
+        "Handler": "newrelic-lambda-wrapper.handler",
+        "Layers": [
+          {
+            "Fn::FindInMap": [
+              "ParamsandsecretslayerMap",
+              {
+                "Ref": "AWS::Region",
+              },
+              "1x0x103xarm64",
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:aws:lambda:",
+                {
+                  "Ref": "AWS::Region",
+                },
+                ":451483290750:layer:NewRelicNodeJS20XARM64:96",
+              ],
+            ],
+          },
+        ],
+        "LoggingConfig": {
+          "ApplicationLogLevel": "INFO",
+          "LogFormat": "JSON",
+          "LogGroup": {
+            "Ref": "LugusSmokelogs6304DE87",
+          },
+        },
+        "MemorySize": 1048,
+        "Role": {
+          "Fn::GetAtt": [
+            "LugusSmokeServiceRole81BD16B1",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs20.x",
+        "Timeout": 30,
+        "TracingConfig": {
+          "Mode": "Active",
+        },
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "LugusSmokeServiceRole81BD16B1": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::",
+                {
+                  "Ref": "AWS::AccountId",
+                },
+                ":policy/merged-api-ReadApiPolicy",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "LugusSmokeServiceRoleDefaultPolicyA4DE00C1": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "NewRelicLicenseKeySecret-NewRelic-LicenseKeySecretARN",
+              },
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition",
+                    },
+                    ":secretsmanager:",
+                    {
+                      "Ref": "AWS::Region",
+                    },
+                    ":",
+                    {
+                      "Ref": "AWS::AccountId",
+                    },
+                    ":secret:/shared/statsig-??????",
+                  ],
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "LugusSmokeServiceRoleDefaultPolicyA4DE00C1",
+        "Roles": [
+          {
+            "Ref": "LugusSmokeServiceRole81BD16B1",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "LugusSmokelogs6304DE87": {
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "LogGroupClass": "INFREQUENT_ACCESS",
+        "RetentionInDays": 30,
+        "Tags": [
+          {
+            "Key": "SkipNewRelic",
+            "Value": "true",
+          },
+        ],
+      },
+      "Type": "AWS::Logs::LogGroup",
+      "UpdateReplacePolicy": "Retain",
+    },
     "TrackerSubscriptionTable408C8229": {
       "DeletionPolicy": "RetainExceptOnCreate",
       "Properties": {
