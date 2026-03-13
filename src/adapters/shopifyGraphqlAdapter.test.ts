@@ -1,5 +1,5 @@
-import { ClientError, GraphQLClient } from 'graphql-request'
 import { GraphQLError } from 'graphql'
+import { ClientError, GraphQLClient } from 'graphql-request'
 
 import type { TrackerAttributes } from '../types/shopifyTypes'
 import { shopifyGraphqlAdapter } from './shopifyGraphqlAdapter'
@@ -64,10 +64,9 @@ describe('shopifyGraphqlAdapter.sendTrackerUpdate', () => {
   })
 
   it('returns success: false on ClientError (GraphQL-level error)', async () => {
-    const clientError = new ClientError(
-      { errors: [new GraphQLError('Throttled')], status: 200 } as never,
-      { query: '' }
-    )
+    const clientError = new ClientError({ errors: [new GraphQLError('Throttled')], status: 200 } as never, {
+      query: '',
+    })
     mockRequest.mockRejectedValue(clientError)
 
     const result = await shopifyGraphqlAdapter.sendTrackerUpdate(SAMPLE_ATTRIBUTES, 'webhook-id-1', 'idem-key-1')
