@@ -1,3 +1,5 @@
+import { log } from '@veho/observability-sdk'
+
 export interface FieldMapping {
   source: string
   target: string
@@ -42,7 +44,7 @@ export function applyFieldMapping(source: Record<string, unknown>, config: Mappi
       if (mapped !== undefined) {
         result[mapping.target] = mapped
       } else {
-        console.warn(`Unknown status value: "${stringValue}" — passing through unmapped`)
+        log.warn(`Unknown status value: "${stringValue}" — passing through unmapped`)
         result[mapping.target] = stringValue
       }
     } else {

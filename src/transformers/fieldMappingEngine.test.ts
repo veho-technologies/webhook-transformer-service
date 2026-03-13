@@ -1,3 +1,5 @@
+import { log } from '@veho/observability-sdk'
+
 import { applyFieldMapping, getNestedValue, type MappingConfig } from './fieldMappingEngine'
 
 describe('getNestedValue', () => {
@@ -55,7 +57,7 @@ describe('applyFieldMapping', () => {
   })
 
   it('passes through unknown status values and warns', () => {
-    const warnSpy = jest.spyOn(console, 'warn').mockImplementation()
+    const warnSpy = jest.spyOn(log, 'warn').mockImplementation()
     const config: MappingConfig = {
       mappings: [{ source: 'status', target: 'fulfillmentStatus', transform: 'statusMap' }],
       statusMap: { delivered: 'DELIVERED' },
