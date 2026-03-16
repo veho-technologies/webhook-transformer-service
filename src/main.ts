@@ -15,19 +15,24 @@ const envs: Record<
   string,
   {
     account: string
+    mergedApiUrl: string
   }
 > = {
   dev: {
     account: '657230704726',
+    mergedApiUrl: 'https://graph.dev.shipveho.com/graphql',
   },
   staging: {
     account: '048595045497',
+    mergedApiUrl: 'https://graph.staging.shipveho.com/graphql',
   },
   prod: {
     account: '595208618232',
+    mergedApiUrl: 'https://graph.shipveho.com/graphql',
   },
   sandbox: {
     account: '050838062588',
+    mergedApiUrl: 'https://graph.sandbox.shipveho.com/graphql',
   },
 }
 
@@ -40,6 +45,7 @@ for (const [envName, env] of Object.entries(envs)) {
     isEphemeral: false,
     env: { region, account: env.account },
     tags: TAGS,
+    mergedApiUrl: env.mergedApiUrl,
   })
 }
 
@@ -53,6 +59,7 @@ if (personalStackName) {
     teamName: 'growth',
     tags: TAGS,
     isEphemeral: true,
+    mergedApiUrl: envs.dev.mergedApiUrl,
   })
 }
 
