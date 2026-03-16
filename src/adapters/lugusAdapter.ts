@@ -10,7 +10,6 @@ const GET_PACKAGE_BY_TRACKING_ID = gql`
         eventType
         timestamp
         message
-        meta
       }
     }
   }

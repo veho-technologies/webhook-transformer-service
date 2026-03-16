@@ -16,8 +16,8 @@ describe('lugusAdapter.getPackageEventHistory', () => {
 
   it('returns package log entries on success', async () => {
     const entries = [
-      { eventType: 'PICKED_UP', timestamp: '2026-03-10T08:00:00Z', message: 'Package picked up', meta: '{}' },
-      { eventType: 'IN_TRANSIT', timestamp: '2026-03-10T12:00:00Z', message: 'In transit', meta: '{"hub":"NJ"}' },
+      { eventType: 'PICKED_UP', timestamp: '2026-03-10T08:00:00Z', message: 'Package picked up' },
+      { eventType: 'IN_TRANSIT', timestamp: '2026-03-10T12:00:00Z', message: 'In transit' },
     ]
     mockRequest.mockResolvedValue({ getPackageByTrackingId: { packageLog: entries } })
 
