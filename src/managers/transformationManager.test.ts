@@ -310,9 +310,7 @@ describe('transformationManager', () => {
     it('should call Shopify and Lugus adapters', async () => {
       mockGetPackageWithHistory.mockResolvedValue({
         clientId: 'client-123',
-        packageLog: [
-          { eventType: 'pickedUpFromVeho', timestamp: '2024-01-02T10:00:00Z', message: 'Out for delivery' },
-        ],
+        packageLog: [{ eventType: 'pickedUpFromVeho', timestamp: '2024-01-02T10:00:00Z', message: 'Out for delivery' }],
       })
       mockCreateSubscription.mockResolvedValue({})
       mockGetByClientId.mockResolvedValue(MOCK_CONFIG)

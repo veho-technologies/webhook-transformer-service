@@ -497,14 +497,6 @@
         }
       ]
     },
-    "server": {
-      "name": "server",
-      "steps": [
-        {
-          "exec": "gaia server start"
-        }
-      ]
-    },
     "synth": {
       "name": "synth",
       "description": "Synthesizes your cdk app into cdk.out",

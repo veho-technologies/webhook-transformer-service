@@ -64,9 +64,7 @@ describe('lugusAdapter.getPackageWithHistory', () => {
   })
 
   it('returns clientId and package log entries on success', async () => {
-    const entries = [
-      { eventType: 'PICKED_UP', timestamp: '2026-03-10T08:00:00Z', message: 'Package picked up' },
-    ]
+    const entries = [{ eventType: 'PICKED_UP', timestamp: '2026-03-10T08:00:00Z', message: 'Package picked up' }]
     mockRequest.mockResolvedValue({
       getPackageByTrackingId: { clientId: 'client-abc', packageLog: entries },
     })
@@ -95,10 +93,7 @@ describe('lugusAdapter.getPackageWithHistory', () => {
   })
 
   it('filters null entries from packageLog', async () => {
-    const entries = [
-      { eventType: 'IN_TRANSIT', timestamp: '2026-03-10T12:00:00Z', message: 'In transit' },
-      null,
-    ]
+    const entries = [{ eventType: 'IN_TRANSIT', timestamp: '2026-03-10T12:00:00Z', message: 'In transit' }, null]
     mockRequest.mockResolvedValue({
       getPackageByTrackingId: { clientId: 'client-abc', packageLog: entries },
     })
