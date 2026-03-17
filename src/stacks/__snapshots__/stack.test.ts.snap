@@ -124,7 +124,7 @@ exports[`Snapshot 1`] = `
           "S3Bucket": {
             "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
           },
-          "S3Key": "d2db092338e440db33d55c5a12f2f4b1bf87038935b0848e77bda67dc5c560f3.zip",
+          "S3Key": "2c32b828fb8b189f7e64fc805a0baef6c9ee675dd5503a13b9b980c750a8751e.zip",
         },
         "Environment": {
           "Variables": {
@@ -735,6 +735,10 @@ exports[`Snapshot 1`] = `
             "AttributeName": "subscribedAt",
             "AttributeType": "S",
           },
+          {
+            "AttributeName": "trackerReferenceId",
+            "AttributeType": "S",
+          },
         ],
         "BillingMode": "PAY_PER_REQUEST",
         "GlobalSecondaryIndexes": [
@@ -743,6 +747,22 @@ exports[`Snapshot 1`] = `
             "KeySchema": [
               {
                 "AttributeName": "clientId",
+                "KeyType": "HASH",
+              },
+              {
+                "AttributeName": "subscribedAt",
+                "KeyType": "RANGE",
+              },
+            ],
+            "Projection": {
+              "ProjectionType": "ALL",
+            },
+          },
+          {
+            "IndexName": "byTrackerReferenceId",
+            "KeySchema": [
+              {
+                "AttributeName": "trackerReferenceId",
                 "KeyType": "HASH",
               },
               {
@@ -774,6 +794,12 @@ exports[`Snapshot 1`] = `
                 },
                 "IndexName": "byClientId",
               },
+              {
+                "ContributorInsightsSpecification": {
+                  "Enabled": false,
+                },
+                "IndexName": "byTrackerReferenceId",
+              },
             ],
             "PointInTimeRecoverySpecification": {
               "PointInTimeRecoveryEnabled": true,
@@ -783,6 +809,10 @@ exports[`Snapshot 1`] = `
             },
           },
         ],
+        "TimeToLiveSpecification": {
+          "AttributeName": "timeToLive",
+          "Enabled": true,
+        },
       },
       "Type": "AWS::DynamoDB::GlobalTable",
       "UpdateReplacePolicy": "Retain",

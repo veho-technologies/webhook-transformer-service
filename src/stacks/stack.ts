@@ -32,11 +32,16 @@ export class WebhookTransformerStack extends VehoStack {
     this.trackerSubscriptionTable = new TableV2(this, 'TrackerSubscriptionTable', {
       partitionKey: { name: 'trackingNumber', type: AttributeType.STRING },
       disableCompositePrimaryKey: true,
-      disableTtl: true,
+      timeToLiveAttribute: 'timeToLive',
       globalSecondaryIndexes: [
         {
           indexName: 'byClientId',
           partitionKey: { name: 'clientId', type: AttributeType.STRING },
+          sortKey: { name: 'subscribedAt', type: AttributeType.STRING },
+        },
+        {
+          indexName: 'byTrackerReferenceId',
+          partitionKey: { name: 'trackerReferenceId', type: AttributeType.STRING },
           sortKey: { name: 'subscribedAt', type: AttributeType.STRING },
         },
       ],
