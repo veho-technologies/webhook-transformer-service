@@ -15,12 +15,12 @@ function buildCompositeKey(clientId: string, trackingNumber: string): string {
 
 export const transformDeliveryAttemptDataAccessor = {
   async create(
-    attempt: Omit<TransformDeliveryAttempt, 'id' | 'timeToLive' | 'clientIdTrackingNumber'>
+    attempt: Omit<TransformDeliveryAttempt, 'id' | 'ttl' | 'clientIdTrackingNumber'>
   ): Promise<TransformDeliveryAttempt> {
     const id = ulid()
-    const timeToLive = Math.floor(Date.now() / 1000) + THIRTY_DAYS_IN_SECONDS
+    const ttl = Math.floor(Date.now() / 1000) + THIRTY_DAYS_IN_SECONDS
     const clientIdTrackingNumber = buildCompositeKey(attempt.clientId, attempt.trackingNumber)
-    const item = { ...attempt, id, timeToLive, clientIdTrackingNumber }
+    const item = { ...attempt, id, ttl, clientIdTrackingNumber }
     await TransformDeliveryAttemptEntity.build(PutItemCommand).item(item).send()
     return item
   },

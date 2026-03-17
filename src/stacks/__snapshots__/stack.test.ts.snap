@@ -124,7 +124,7 @@ exports[`Snapshot 1`] = `
           "S3Bucket": {
             "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
           },
-          "S3Key": "26e839031253f07f6e042948644c8448e9ef874efd3ad65a8861ab833ef93b42.zip",
+          "S3Key": "2e3dbe56f94f0abf69da9c6b2da23f46122fd3adc59926e24da7d1fc235990d5.zip",
         },
         "Environment": {
           "Variables": {
@@ -856,7 +856,7 @@ exports[`Snapshot 1`] = `
           },
         ],
         "TimeToLiveSpecification": {
-          "AttributeName": "timeToLive",
+          "AttributeName": "ttl",
           "Enabled": true,
         },
       },

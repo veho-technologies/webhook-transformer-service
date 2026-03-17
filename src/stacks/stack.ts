@@ -50,7 +50,6 @@ export class WebhookTransformerStack extends VehoStack {
     this.transformDeliveryAttemptTable = new TableV2(this, 'TransformDeliveryAttemptTable', {
       partitionKey: { name: 'clientIdTrackingNumber', type: AttributeType.STRING },
       sortKey: { name: 'id', type: AttributeType.STRING },
-      timeToLiveAttribute: 'timeToLive',
       removalPolicy: RemovalPolicy.RETAIN,
     })
 
