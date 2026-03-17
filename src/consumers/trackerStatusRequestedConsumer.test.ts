@@ -7,7 +7,7 @@ import { handler } from './trackerStatusRequestedConsumer'
 
 jest.mock('../dataAccessors/trackerSubscriptionDataAccessor', () => ({
   trackerSubscriptionDataAccessor: {
-    listByClientId: jest.fn(),
+    getByTrackerReferenceId: jest.fn(),
   },
 }))
 
@@ -17,7 +17,7 @@ jest.mock('../managers/transformationManager', () => ({
   },
 }))
 
-const mockListByClientId = trackerSubscriptionDataAccessor.listByClientId as jest.Mock
+const mockGetByTrackerReferenceId = trackerSubscriptionDataAccessor.getByTrackerReferenceId as jest.Mock
 const mockProcessStatusRequest = transformationManager.processStatusRequest as jest.Mock
 
 function buildEvent(
@@ -63,64 +63,37 @@ function buildEvent(
 describe('trackerStatusRequestedConsumer', () => {
   beforeEach(() => jest.clearAllMocks())
 
-  it('looks up subscription and calls processStatusRequest', async () => {
-    mockListByClientId.mockResolvedValue([
-      {
-        trackingNumber: 'TRK-001',
-        trackerReferenceId: 'shopify-tracker-001',
-        clientId: 'client-001',
-        carrierId: 'carrier-001',
-        subscribedAt: '2024-01-01T00:00:00Z',
-      },
-    ])
-
-    await handler(buildEvent())
-
-    expect(mockListByClientId).toHaveBeenCalledWith('client-001')
-    expect(mockProcessStatusRequest).toHaveBeenCalledWith({
+  it('looks up subscription by trackerReferenceId and calls processStatusRequest', async () => {
+    mockGetByTrackerReferenceId.mockResolvedValue({
       trackingNumber: 'TRK-001',
       trackerReferenceId: 'shopify-tracker-001',
       clientId: 'client-001',
+      carrierId: 'carrier-001',
+      subscribedAt: '2024-01-01T00:00:00Z',
+    })
+
+    await handler(buildEvent())
+
+    expect(mockGetByTrackerReferenceId).toHaveBeenCalledWith('shopify-tracker-001')
+    expect(mockProcessStatusRequest).toHaveBeenCalledWith({
+      trackingNumber: 'TRK-001',
       webhookId: 'webhook-001',
       idempotencyKey: 'idem-001',
     })
   })
 
-  it('warns and returns when no matching subscription found', async () => {
-    mockListByClientId.mockResolvedValue([])
+  it('warns and returns when no subscription found', async () => {
+    mockGetByTrackerReferenceId.mockResolvedValue(undefined)
 
     await handler(buildEvent())
 
     expect(mockProcessStatusRequest).not.toHaveBeenCalled()
   })
 
-  it('matches subscription by providerTrackerId', async () => {
-    mockListByClientId.mockResolvedValue([
-      {
-        trackingNumber: 'TRK-999',
-        trackerReferenceId: 'other-tracker',
-        clientId: 'client-001',
-        carrierId: 'c1',
-        subscribedAt: '2024-01-01T00:00:00Z',
-      },
-      {
-        trackingNumber: 'TRK-001',
-        trackerReferenceId: 'shopify-tracker-001',
-        clientId: 'client-001',
-        carrierId: 'c2',
-        subscribedAt: '2024-01-01T00:00:00Z',
-      },
-    ])
-
-    await handler(buildEvent())
-
-    expect(mockProcessStatusRequest).toHaveBeenCalledWith(expect.objectContaining({ trackingNumber: 'TRK-001' }))
-  })
-
   it('lets errors propagate for EventBridge retry', async () => {
-    const error = new Error('transformation failure')
-    mockListByClientId.mockRejectedValue(error)
+    const error = new Error('DynamoDB failure')
+    mockGetByTrackerReferenceId.mockRejectedValue(error)
 
-    await expect(handler(buildEvent())).rejects.toThrow('transformation failure')
+    await expect(handler(buildEvent())).rejects.toThrow('DynamoDB failure')
   })
 })

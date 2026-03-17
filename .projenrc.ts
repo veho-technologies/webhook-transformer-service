@@ -11,6 +11,11 @@ const project = new GaiaCdkApp({
   workflowNodeVersion: '22.14',
   name: 'webhook-transformer-service',
   projenrcTs: true,
+  jestOptions: {
+    jestConfig: {
+      setupFiles: ['<rootDir>/src/test/setupEnv.ts'],
+    },
+  },
 
   deps: [
     'dynamodb-toolbox',
@@ -28,4 +33,5 @@ const project = new GaiaCdkApp({
   // environments: [{ name: 'dev', branch: 'dev', usedForDevelopment: true, awsAccountId: '657230704726' }, { name: 'staging', awsAccountId: '048595045497' }, { name: 'prod',  dependsOn: ['staging'], requireManualDeployApproval: true, enableCiDiffJob: true, awsAccountId: '595208618232' }],  /* Options to define application environments. */
   // packageName: undefined,                                                                                                                                                                                                                                                                        /* The "name" in package.json. */
 })
+project.gitignore.addPatterns('package-lock.json')
 project.synth()

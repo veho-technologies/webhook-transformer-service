@@ -7,7 +7,7 @@ import { handler } from './trackerUnsubscribedConsumer'
 
 jest.mock('../dataAccessors/trackerSubscriptionDataAccessor', () => ({
   trackerSubscriptionDataAccessor: {
-    listByClientId: jest.fn(),
+    getByTrackerReferenceId: jest.fn(),
   },
 }))
 
@@ -17,7 +17,7 @@ jest.mock('../managers/trackerSubscriptionManager', () => ({
   },
 }))
 
-const mockListByClientId = trackerSubscriptionDataAccessor.listByClientId as jest.Mock
+const mockGetByTrackerReferenceId = trackerSubscriptionDataAccessor.getByTrackerReferenceId as jest.Mock
 const mockRemoveSubscription = trackerSubscriptionManager.removeSubscription as jest.Mock
 
 function buildEvent(
@@ -64,41 +64,23 @@ function buildEvent(
 describe('trackerUnsubscribedConsumer', () => {
   beforeEach(() => jest.clearAllMocks())
 
-  it('looks up subscription by clientId and removes by trackingNumber', async () => {
-    mockListByClientId.mockResolvedValue([
-      {
-        trackingNumber: 'TRK-001',
-        trackerReferenceId: 'shopify-tracker-001',
-        clientId: 'client-001',
-        carrierId: 'carrier-001',
-        subscribedAt: '2024-01-01T00:00:00Z',
-      },
-    ])
+  it('looks up subscription by trackerReferenceId and removes by trackingNumber', async () => {
+    mockGetByTrackerReferenceId.mockResolvedValue({
+      trackingNumber: 'TRK-001',
+      trackerReferenceId: 'shopify-tracker-001',
+      clientId: 'client-001',
+      carrierId: 'carrier-001',
+      subscribedAt: '2024-01-01T00:00:00Z',
+    })
 
     await handler(buildEvent())
 
-    expect(mockListByClientId).toHaveBeenCalledWith('client-001')
+    expect(mockGetByTrackerReferenceId).toHaveBeenCalledWith('shopify-tracker-001')
     expect(mockRemoveSubscription).toHaveBeenCalledWith('TRK-001')
   })
 
-  it('warns and returns when no matching subscription found', async () => {
-    mockListByClientId.mockResolvedValue([
-      {
-        trackingNumber: 'TRK-999',
-        trackerReferenceId: 'other-tracker',
-        clientId: 'client-001',
-        carrierId: 'carrier-001',
-        subscribedAt: '2024-01-01T00:00:00Z',
-      },
-    ])
-
-    await handler(buildEvent())
-
-    expect(mockRemoveSubscription).not.toHaveBeenCalled()
-  })
-
-  it('warns and returns when client has no subscriptions', async () => {
-    mockListByClientId.mockResolvedValue([])
+  it('warns and returns when no subscription found', async () => {
+    mockGetByTrackerReferenceId.mockResolvedValue(undefined)
 
     await handler(buildEvent())
 
@@ -107,7 +89,7 @@ describe('trackerUnsubscribedConsumer', () => {
 
   it('lets errors propagate for EventBridge retry', async () => {
     const error = new Error('DynamoDB failure')
-    mockListByClientId.mockRejectedValue(error)
+    mockGetByTrackerReferenceId.mockRejectedValue(error)
 
     await expect(handler(buildEvent())).rejects.toThrow('DynamoDB failure')
   })
