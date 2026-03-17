@@ -79,8 +79,6 @@ describe('trackerStatusRequestedConsumer', () => {
     expect(mockListByClientId).toHaveBeenCalledWith('client-001')
     expect(mockProcessStatusRequest).toHaveBeenCalledWith({
       trackingNumber: 'TRK-001',
-      trackerReferenceId: 'shopify-tracker-001',
-      clientId: 'client-001',
       webhookId: 'webhook-001',
       idempotencyKey: 'idem-001',
     })

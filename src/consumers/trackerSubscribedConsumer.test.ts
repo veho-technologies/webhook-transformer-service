@@ -81,7 +81,7 @@ describe('trackerSubscribedConsumer', () => {
     expect(mockProcessInitialSubscription).toHaveBeenCalledWith({
       trackingNumber: 'TRK-001',
       trackerReferenceId: 'shopify-tracker-001',
-      clientId: 'client-001',
+      carrierId: 'carrier-001',
     })
   })
 

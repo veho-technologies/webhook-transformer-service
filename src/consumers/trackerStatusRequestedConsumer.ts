@@ -21,8 +21,6 @@ export const handler = async (
 
   await transformationManager.processStatusRequest({
     trackingNumber: subscription.trackingNumber,
-    trackerReferenceId: subscription.trackerReferenceId,
-    clientId: payload.clientId,
     webhookId: payload.providerWebhookId,
     idempotencyKey: payload.idempotencyKey,
   })

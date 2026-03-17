@@ -23,6 +23,6 @@ export const handler = async (
   await transformationManager.processInitialSubscription({
     trackingNumber: payload.trackingNumber,
     trackerReferenceId: payload.providerTrackerId,
-    clientId: payload.clientId,
+    carrierId: payload.providerCarrierId,
   })
 }
