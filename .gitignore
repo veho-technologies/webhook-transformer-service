@@ -54,6 +54,9 @@ junit.xml
 analyzed_bundle.*
 /.event-studio/
 .idea
+.env
+.DS_Store
+*.swp
 .lldebugger
 !/codecov.yml
 !/.circleci/config.yml

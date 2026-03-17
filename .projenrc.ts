@@ -22,6 +22,7 @@ const project = new GaiaCdkApp({
     'graphql',
     'aws-sigv4-fetch',
     '@veho/merged-api',
+    '@veho/event-types',
   ],
   // description: undefined,                                                                                                                                                                                                                                                                        /* The description is just a string that helps people understand the purpose of the package. */
   // environments: [{ name: 'dev', branch: 'dev', usedForDevelopment: true, awsAccountId: '657230704726' }, { name: 'staging', awsAccountId: '048595045497' }, { name: 'prod',  dependsOn: ['staging'], requireManualDeployApproval: true, enableCiDiffJob: true, awsAccountId: '595208618232' }],  /* Options to define application environments. */
