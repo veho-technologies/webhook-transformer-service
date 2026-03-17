@@ -10,6 +10,10 @@ const GET_PACKAGE_BY_TRACKING_ID = gql`
         eventType
         timestamp
         message
+        location {
+          lat
+          lng
+        }
       }
     }
   }
@@ -23,6 +27,10 @@ const GET_PACKAGE_WITH_HISTORY = gql`
         eventType
         timestamp
         message
+        location {
+          lat
+          lng
+        }
       }
     }
   }

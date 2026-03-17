@@ -88,7 +88,8 @@ export const transformationManager = {
     const rawEventLog = event.entity.package.eventLog ?? []
     const events = buildTrackerEvents(rawEventLog, eventLevel, statusMap)
 
-    const idempotencyKey = ulid()
+    const lastEventTimestamp = rawEventLog.at(-1)?.timestamp ?? ''
+    const idempotencyKey = `${trackingNumber}:${event.operation ?? 'unknown'}:${lastEventTimestamp}`
     const trackerAttributes: TrackerAttributes = {
       ...topLevelMapped,
       trackingNumber,
@@ -167,13 +168,16 @@ export const transformationManager = {
       return
     }
 
-    await trackerSubscriptionDataAccessor.create({
-      trackingNumber: params.trackingNumber,
-      trackerReferenceId: params.trackerReferenceId,
-      carrierId: params.carrierId,
-      clientId,
-      subscribedAt: new Date().toISOString(),
-    })
+    const existing = await trackerSubscriptionDataAccessor.getByTrackingNumber(params.trackingNumber)
+    if (!existing) {
+      await trackerSubscriptionDataAccessor.create({
+        trackingNumber: params.trackingNumber,
+        trackerReferenceId: params.trackerReferenceId,
+        carrierId: params.carrierId,
+        clientId,
+        subscribedAt: new Date().toISOString(),
+      })
+    }
 
     const config = await clientConfigDataAccessor.getByClientId(clientId)
     if (!config) {

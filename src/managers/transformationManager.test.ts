@@ -129,7 +129,7 @@ describe('transformationManager', () => {
           ] as TrackerEvent[],
         }),
         'ref-456',
-        'mock-ulid-123'
+        'TRK-123:unknown:2024-01-02T14:00:00Z'
       )
 
       expect(mockCreateAttempt).toHaveBeenCalledWith(
@@ -138,7 +138,7 @@ describe('transformationManager', () => {
           clientId: 'client-123',
           trackerReferenceId: 'ref-456',
           status: 'success',
-          idempotencyKey: 'mock-ulid-123',
+          idempotencyKey: 'TRK-123:unknown:2024-01-02T14:00:00Z',
         })
       )
     })
@@ -286,6 +286,11 @@ describe('transformationManager', () => {
       carrierId: 'carrier-789',
     }
 
+    beforeEach(() => {
+      // No existing subscription by default — clearAllMocks doesn't reset implementations
+      mockGetByTrackingNumber.mockResolvedValue(undefined)
+    })
+
     it('should get clientId from Lugus, create subscription, and generate its own idempotencyKey', async () => {
       mockGetPackageWithHistory.mockResolvedValue({ clientId: 'client-123', packageLog: [] })
       mockCreateSubscription.mockResolvedValue({})
@@ -367,6 +372,19 @@ describe('transformationManager', () => {
 
       expect(mockCreateSubscription).toHaveBeenCalled()
       expect(mockSendTrackerUpdate).not.toHaveBeenCalled()
+    })
+
+    it('should not overwrite subscription if one already exists (idempotent on retry)', async () => {
+      mockGetPackageWithHistory.mockResolvedValue({ clientId: 'client-123', packageLog: [] })
+      mockGetByTrackingNumber.mockResolvedValue(MOCK_SUBSCRIPTION)
+      mockGetByClientId.mockResolvedValue(MOCK_CONFIG)
+      mockSendTrackerUpdate.mockResolvedValue({ success: true })
+      mockCreateAttempt.mockResolvedValue({})
+
+      await transformationManager.processInitialSubscription(params)
+
+      expect(mockCreateSubscription).not.toHaveBeenCalled()
+      expect(mockSendTrackerUpdate).toHaveBeenCalled()
     })
   })
 
@@ -581,6 +599,7 @@ describe('transformationManager', () => {
     })
 
     it('processInitialSubscription: fetches clientId from Lugus and transforms packageLog to TrackerAttributes', async () => {
+      mockGetByTrackingNumber.mockResolvedValue(undefined)
       mockGetPackageWithHistory.mockResolvedValue({
         clientId: 'client-shopify-001',
         packageLog: REALISTIC_LUGUS_EVENTS,
