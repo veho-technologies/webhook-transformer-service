@@ -31,7 +31,7 @@ export const TrackerSubscriptionEntity = new Entity({
     clientId: schema.string().required(),
     destinationPostalCode: schema.string().optional(),
     subscribedAt: schema.string().required(),
-    timeToLive: schema.number().optional(),
+    ttl: schema.number().optional(),
   }),
 })
 
