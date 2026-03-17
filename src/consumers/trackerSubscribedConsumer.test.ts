@@ -1,15 +1,8 @@
 import type { TrackingSubscriptionCreatedEvent } from '@veho/event-types'
 import type { EventBridgeEvent } from 'aws-lambda'
 
-import { trackerSubscriptionManager } from '../managers/trackerSubscriptionManager'
 import { transformationManager } from '../managers/transformationManager'
 import { handler } from './trackerSubscribedConsumer'
-
-jest.mock('../managers/trackerSubscriptionManager', () => ({
-  trackerSubscriptionManager: {
-    createSubscription: jest.fn(),
-  },
-}))
 
 jest.mock('../managers/transformationManager', () => ({
   transformationManager: {
@@ -17,7 +10,6 @@ jest.mock('../managers/transformationManager', () => ({
   },
 }))
 
-const mockCreateSubscription = trackerSubscriptionManager.createSubscription as jest.Mock
 const mockProcessInitialSubscription = transformationManager.processInitialSubscription as jest.Mock
 
 function buildEvent(
@@ -66,17 +58,8 @@ function buildEvent(
 describe('trackerSubscribedConsumer', () => {
   beforeEach(() => jest.clearAllMocks())
 
-  it('creates subscription and sends initial history', async () => {
+  it('calls processInitialSubscription with trackingNumber, trackerReferenceId, and carrierId', async () => {
     await handler(buildEvent())
-
-    expect(mockCreateSubscription).toHaveBeenCalledWith({
-      trackingNumber: 'TRK-001',
-      trackerReferenceId: 'shopify-tracker-001',
-      carrierId: 'carrier-001',
-      clientId: 'client-001',
-      destinationPostalCode: undefined,
-      subscribedAt: '2024-01-01T00:00:00.000Z',
-    })
 
     expect(mockProcessInitialSubscription).toHaveBeenCalledWith({
       trackingNumber: 'TRK-001',
@@ -85,30 +68,16 @@ describe('trackerSubscribedConsumer', () => {
     })
   })
 
-  it('passes destinationPostalCode when present', async () => {
-    await handler(buildEvent({ providerDestinationPostalCode: '90210' }))
-
-    expect(mockCreateSubscription).toHaveBeenCalledWith(expect.objectContaining({ destinationPostalCode: '90210' }))
-  })
-
-  it('calls processInitialSubscription after createSubscription', async () => {
-    const callOrder: string[] = []
-    mockCreateSubscription.mockImplementation(() => {
-      callOrder.push('createSubscription')
-    })
-    mockProcessInitialSubscription.mockImplementation(() => {
-      callOrder.push('processInitialSubscription')
-    })
-
+  it('does not create subscription directly — processInitialSubscription handles it', async () => {
     await handler(buildEvent())
 
-    expect(callOrder).toEqual(['createSubscription', 'processInitialSubscription'])
+    expect(mockProcessInitialSubscription).toHaveBeenCalledTimes(1)
   })
 
   it('lets errors propagate for EventBridge retry', async () => {
-    const error = new Error('DynamoDB failure')
-    mockCreateSubscription.mockRejectedValue(error)
+    const error = new Error('Lugus failure')
+    mockProcessInitialSubscription.mockRejectedValue(error)
 
-    await expect(handler(buildEvent())).rejects.toThrow('DynamoDB failure')
+    await expect(handler(buildEvent())).rejects.toThrow('Lugus failure')
   })
 })

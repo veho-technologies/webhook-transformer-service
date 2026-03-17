@@ -11,6 +11,11 @@ export const trackerSubscriptionTable = new Table({
       partitionKey: { name: 'clientId', type: 'string' },
       sortKey: { name: 'subscribedAt', type: 'string' },
     },
+    // No sort key — trackerReferenceId (Shopify's providerTrackerId) is unique per subscription (1:1 with trackingNumber)
+    byTrackerReferenceId: {
+      type: 'global' as const,
+      partitionKey: { name: 'trackerReferenceId', type: 'string' },
+    },
   },
   documentClient: DocumentClientSingleton.get(),
 })

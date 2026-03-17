@@ -11,8 +11,7 @@ export const handler = async (
   const { payload } = event.detail
   log.info('Processing TrackingStatusRequested event', { providerTrackerId: payload.providerTrackerId })
 
-  const subscriptions = await trackerSubscriptionDataAccessor.listByClientId(payload.clientId)
-  const subscription = subscriptions.find(s => s.trackerReferenceId === payload.providerTrackerId)
+  const subscription = await trackerSubscriptionDataAccessor.getByTrackerReferenceId(payload.providerTrackerId)
 
   if (!subscription) {
     log.warn('No subscription found for providerTrackerId', { providerTrackerId: payload.providerTrackerId })

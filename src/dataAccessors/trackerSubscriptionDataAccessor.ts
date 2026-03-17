@@ -47,4 +47,13 @@ export const trackerSubscriptionDataAccessor = {
       .send()
     return Items
   },
+
+  async getByTrackerReferenceId(trackerReferenceId: string): Promise<TrackerSubscription | undefined> {
+    const { Items = [] } = await trackerSubscriptionTable
+      .build(QueryCommand)
+      .query({ index: 'byTrackerReferenceId', partition: trackerReferenceId })
+      .entities(TrackerSubscriptionEntity)
+      .send()
+    return Items[0]
+  },
 }
