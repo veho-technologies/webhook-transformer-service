@@ -13,6 +13,9 @@
   "collectCoverageFrom": [
     "src/**/*.{ts,tsx}"
   ],
+  "setupFiles": [
+    "<rootDir>/src/test/setupEnv.ts"
+  ],
   "testMatch": [
     "<rootDir>/@(src|test)/**/*(*.)@(spec|test).ts?(x)",
     "<rootDir>/@(src|test)/**/__tests__/**/*.ts?(x)",
