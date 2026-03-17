@@ -9,8 +9,8 @@ export const clientConfigTable = new Table({
 })
 
 const fieldMappingSchema = schema.map({
-  source: schema.string(),
-  target: schema.string(),
+  source: schema.string().required(),
+  target: schema.string().required(),
   transform: schema.string().optional(),
 })
 
