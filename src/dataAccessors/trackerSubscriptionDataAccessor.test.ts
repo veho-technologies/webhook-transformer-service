@@ -5,7 +5,8 @@ import { trackerSubscriptionDataAccessor } from './trackerSubscriptionDataAccess
 
 const mockSend = jest.fn()
 const mockKey = jest.fn().mockReturnValue({ send: mockSend })
-const mockItem = jest.fn().mockReturnValue({ send: mockSend })
+const mockOptions = jest.fn().mockReturnValue({ send: mockSend })
+const mockItem = jest.fn().mockReturnValue({ send: mockSend, options: mockOptions })
 const mockBuild = jest.fn().mockReturnValue({ key: mockKey, item: mockItem })
 
 const mockEntities = jest.fn().mockReturnValue({ send: mockSend })
@@ -57,6 +58,39 @@ describe('trackerSubscriptionDataAccessor', () => {
       expect(result).toEqual(mockSubscription)
       expect(mockBuild).toHaveBeenCalledWith(PutItemCommand)
       expect(mockItem).toHaveBeenCalledWith(mockSubscription)
+    })
+  })
+
+  describe('createIfNotExists', () => {
+    it('should put item with attribute_not_exists condition and return input when no conflict', async () => {
+      mockSend.mockResolvedValue({})
+
+      const result = await trackerSubscriptionDataAccessor.createIfNotExists(mockSubscription)
+
+      expect(result).toEqual(mockSubscription)
+      expect(mockBuild).toHaveBeenCalledWith(PutItemCommand)
+      expect(mockItem).toHaveBeenCalledWith(mockSubscription)
+      expect(mockOptions).toHaveBeenCalledWith({ condition: { attr: 'trackingNumber', exists: false } })
+    })
+
+    it('should return the existing subscription when ConditionalCheckFailedException is thrown', async () => {
+      const conditionalError = Object.assign(new Error('ConditionalCheckFailedException'), {
+        name: 'ConditionalCheckFailedException',
+      })
+      mockSend.mockRejectedValueOnce(conditionalError)
+      mockSend.mockResolvedValueOnce({ Item: mockSubscription })
+
+      const result = await trackerSubscriptionDataAccessor.createIfNotExists(mockSubscription)
+
+      expect(result).toEqual(mockSubscription)
+    })
+
+    it('should re-throw errors that are not ConditionalCheckFailedException', async () => {
+      mockSend.mockRejectedValue(new Error('ProvisionedThroughputExceededException'))
+
+      await expect(trackerSubscriptionDataAccessor.createIfNotExists(mockSubscription)).rejects.toThrow(
+        'ProvisionedThroughputExceededException'
+      )
     })
   })
 

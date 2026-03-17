@@ -11,6 +11,11 @@ const project = new GaiaCdkApp({
   workflowNodeVersion: '22.14',
   name: 'webhook-transformer-service',
   projenrcTs: true,
+  jestOptions: {
+    jestConfig: {
+      setupFiles: ['<rootDir>/src/test/setupEnv.ts'],
+    },
+  },
 
   deps: [
     'dynamodb-toolbox',

@@ -13,6 +13,28 @@ export const trackerSubscriptionDataAccessor = {
     return subscription
   },
 
+  /**
+   * Writes the subscription only if no record exists for the tracking number.
+   * Uses a DynamoDB conditional write (`attribute_not_exists`) to avoid overwriting
+   * an existing subscription's `subscribedAt` / `trackerReferenceId` on retries.
+   * Returns the newly created subscription, or the existing one if it was already present.
+   */
+  async createIfNotExists(subscription: TrackerSubscription): Promise<TrackerSubscription> {
+    try {
+      await TrackerSubscriptionEntity.build(PutItemCommand)
+        .item(subscription)
+        .options({ condition: { attr: 'trackingNumber', exists: false } })
+        .send()
+      return subscription
+    } catch (error) {
+      if (error instanceof Error && error.name === 'ConditionalCheckFailedException') {
+        const existing = await trackerSubscriptionDataAccessor.getByTrackingNumber(subscription.trackingNumber)
+        return existing ?? subscription
+      }
+      throw error
+    }
+  },
+
   async delete(trackingNumber: string): Promise<void> {
     await TrackerSubscriptionEntity.build(DeleteItemCommand).key({ trackingNumber }).send()
   },

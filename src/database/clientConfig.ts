@@ -8,7 +8,11 @@ export const clientConfigTable = new Table({
   documentClient: DocumentClientSingleton.get(),
 })
 
-const fieldMappingSchema = schema.map({ source: schema.string(), target: schema.string() })
+const fieldMappingSchema = schema.map({
+  source: schema.string().required(),
+  target: schema.string().required(),
+  transform: schema.string().optional(),
+})
 
 export const ClientConfigEntity = new Entity({
   name: 'ClientConfig',
@@ -20,7 +24,7 @@ export const ClientConfigEntity = new Entity({
     endpointUrl: schema.string().required(),
     authType: schema.string().enum('oauth', 'api_key').required(),
     fieldMappings: schema.list(fieldMappingSchema).required(),
-    statusMap: schema.record(schema.string(), schema.any()).required(),
+    statusMap: schema.record(schema.string(), schema.string()).required(),
   }),
 })
 
