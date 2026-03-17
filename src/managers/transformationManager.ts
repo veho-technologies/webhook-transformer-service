@@ -114,14 +114,18 @@ export const transformationManager = {
 
   async processStatusRequest(params: {
     trackingNumber: string
-    trackerReferenceId: string
-    clientId: string
     webhookId: string
     idempotencyKey: string
   }): Promise<void> {
-    const config = await clientConfigDataAccessor.getByClientId(params.clientId)
+    const subscription = await trackerSubscriptionDataAccessor.getByTrackingNumber(params.trackingNumber)
+    if (!subscription) {
+      log.warn(`No subscription found for trackingNumber: ${params.trackingNumber}`)
+      return
+    }
+
+    const config = await clientConfigDataAccessor.getByClientId(subscription.clientId)
     if (!config) {
-      log.warn(`No client config found for clientId: ${params.clientId}`)
+      log.warn(`No client config found for clientId: ${subscription.clientId}`)
       return
     }
 
@@ -132,7 +136,7 @@ export const transformationManager = {
 
     const trackerAttributes: TrackerAttributes = {
       trackingNumber: params.trackingNumber,
-      carrierId: params.trackerReferenceId,
+      carrierId: subscription.carrierId,
       events,
     }
 
@@ -144,8 +148,8 @@ export const transformationManager = {
 
     await transformDeliveryAttemptDataAccessor.create({
       trackingNumber: params.trackingNumber,
-      clientId: params.clientId,
-      trackerReferenceId: params.trackerReferenceId,
+      clientId: subscription.clientId,
+      trackerReferenceId: subscription.trackerReferenceId,
       status: result.success ? 'success' : 'failure',
       idempotencyKey: params.idempotencyKey,
       occurredAt: new Date().toISOString(),
@@ -155,23 +159,36 @@ export const transformationManager = {
   async processInitialSubscription(params: {
     trackingNumber: string
     trackerReferenceId: string
-    clientId: string
+    carrierId: string
   }): Promise<void> {
-    const config = await clientConfigDataAccessor.getByClientId(params.clientId)
+    const { clientId, packageLog } = await lugusAdapter.getPackageWithHistory(params.trackingNumber)
+    if (!clientId) {
+      log.warn(`No clientId found in Lugus for trackingNumber: ${params.trackingNumber}`)
+      return
+    }
+
+    await trackerSubscriptionDataAccessor.create({
+      trackingNumber: params.trackingNumber,
+      trackerReferenceId: params.trackerReferenceId,
+      carrierId: params.carrierId,
+      clientId,
+      subscribedAt: new Date().toISOString(),
+    })
+
+    const config = await clientConfigDataAccessor.getByClientId(clientId)
     if (!config) {
-      log.warn(`No client config found for clientId: ${params.clientId}`)
+      log.warn(`No client config found for clientId: ${clientId}`)
       return
     }
 
     const { fieldMappings, statusMap } = getConfigMappings(config)
     const { eventLevel } = splitFieldMappings(fieldMappings)
-    const lugusEvents = await lugusAdapter.getPackageEventHistory(params.trackingNumber)
-    const events = buildTrackerEvents(lugusEvents, eventLevel, statusMap)
+    const events = buildTrackerEvents(packageLog, eventLevel, statusMap)
 
     const idempotencyKey = ulid()
     const trackerAttributes: TrackerAttributes = {
       trackingNumber: params.trackingNumber,
-      carrierId: params.trackerReferenceId,
+      carrierId: params.carrierId,
       events,
     }
 
@@ -183,7 +200,7 @@ export const transformationManager = {
 
     await transformDeliveryAttemptDataAccessor.create({
       trackingNumber: params.trackingNumber,
-      clientId: params.clientId,
+      clientId,
       trackerReferenceId: params.trackerReferenceId,
       status: result.success ? 'success' : 'failure',
       idempotencyKey,

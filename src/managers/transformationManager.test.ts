@@ -6,14 +6,17 @@ import type { TrackerAttributes, TrackerEvent } from '../types/shopifyTypes'
 import { type EnrichedPackageEventWithEventLog, transformationManager } from './transformationManager'
 
 const mockGetByTrackingNumber = jest.fn()
+const mockCreateSubscription = jest.fn()
 const mockGetByClientId = jest.fn()
 const mockCreateAttempt = jest.fn()
 const mockSendTrackerUpdate = jest.fn()
 const mockGetPackageEventHistory = jest.fn()
+const mockGetPackageWithHistory = jest.fn()
 
 jest.mock('../dataAccessors/trackerSubscriptionDataAccessor', () => ({
   trackerSubscriptionDataAccessor: {
     getByTrackingNumber: (...args: unknown[]) => mockGetByTrackingNumber(...args),
+    create: (...args: unknown[]) => mockCreateSubscription(...args),
   },
 }))
 
@@ -38,6 +41,7 @@ jest.mock('../adapters/shopifyGraphqlAdapter', () => ({
 jest.mock('../adapters/lugusAdapter', () => ({
   lugusAdapter: {
     getPackageEventHistory: (...args: unknown[]) => mockGetPackageEventHistory(...args),
+    getPackageWithHistory: (...args: unknown[]) => mockGetPackageWithHistory(...args),
   },
 }))
 
@@ -196,13 +200,12 @@ describe('transformationManager', () => {
   describe('processStatusRequest', () => {
     const params = {
       trackingNumber: 'TRK-123',
-      trackerReferenceId: 'ref-456',
-      clientId: 'client-123',
       webhookId: 'webhook-789',
       idempotencyKey: 'idem-key-001',
     }
 
-    it('should pass verbatim webhookId and idempotencyKey to Shopify', async () => {
+    it('should look up subscription and pass verbatim webhookId and idempotencyKey to Shopify', async () => {
+      mockGetByTrackingNumber.mockResolvedValue(MOCK_SUBSCRIPTION)
       mockGetByClientId.mockResolvedValue(MOCK_CONFIG)
       mockGetPackageEventHistory.mockResolvedValue([
         { eventType: 'delivered', timestamp: '2024-01-02T14:00:00Z', message: 'Delivered' },
@@ -212,10 +215,11 @@ describe('transformationManager', () => {
 
       await transformationManager.processStatusRequest(params)
 
+      expect(mockGetByTrackingNumber).toHaveBeenCalledWith('TRK-123')
       expect(mockSendTrackerUpdate).toHaveBeenCalledWith(
         expect.objectContaining({
           trackingNumber: 'TRK-123',
-          carrierId: 'ref-456',
+          carrierId: 'carrier-789',
           events: [{ status: 'DELIVERED', happenedAt: '2024-01-02T14:00:00Z', message: 'Delivered' }],
         }),
         'webhook-789',
@@ -224,6 +228,7 @@ describe('transformationManager', () => {
     })
 
     it('should call lugusAdapter with correct trackingNumber', async () => {
+      mockGetByTrackingNumber.mockResolvedValue(MOCK_SUBSCRIPTION)
       mockGetByClientId.mockResolvedValue(MOCK_CONFIG)
       mockGetPackageEventHistory.mockResolvedValue([])
       mockSendTrackerUpdate.mockResolvedValue({ success: true })
@@ -234,7 +239,8 @@ describe('transformationManager', () => {
       expect(mockGetPackageEventHistory).toHaveBeenCalledWith('TRK-123')
     })
 
-    it('should log delivery attempt', async () => {
+    it('should log delivery attempt with subscription data', async () => {
+      mockGetByTrackingNumber.mockResolvedValue(MOCK_SUBSCRIPTION)
       mockGetByClientId.mockResolvedValue(MOCK_CONFIG)
       mockGetPackageEventHistory.mockResolvedValue([])
       mockSendTrackerUpdate.mockResolvedValue({ success: true })
@@ -253,7 +259,17 @@ describe('transformationManager', () => {
       )
     })
 
+    it('should skip when no subscription exists', async () => {
+      mockGetByTrackingNumber.mockResolvedValue(undefined)
+
+      await transformationManager.processStatusRequest(params)
+
+      expect(mockGetPackageEventHistory).not.toHaveBeenCalled()
+      expect(mockSendTrackerUpdate).not.toHaveBeenCalled()
+    })
+
     it('should skip when no config exists', async () => {
+      mockGetByTrackingNumber.mockResolvedValue(MOCK_SUBSCRIPTION)
       mockGetByClientId.mockResolvedValue(undefined)
 
       await transformationManager.processStatusRequest(params)
@@ -267,35 +283,48 @@ describe('transformationManager', () => {
     const params = {
       trackingNumber: 'TRK-123',
       trackerReferenceId: 'ref-456',
-      clientId: 'client-123',
+      carrierId: 'carrier-789',
     }
 
-    it('should generate its own idempotencyKey', async () => {
+    it('should get clientId from Lugus, create subscription, and generate its own idempotencyKey', async () => {
+      mockGetPackageWithHistory.mockResolvedValue({ clientId: 'client-123', packageLog: [] })
+      mockCreateSubscription.mockResolvedValue({})
       mockGetByClientId.mockResolvedValue(MOCK_CONFIG)
-      mockGetPackageEventHistory.mockResolvedValue([])
       mockSendTrackerUpdate.mockResolvedValue({ success: true })
       mockCreateAttempt.mockResolvedValue({})
 
       await transformationManager.processInitialSubscription(params)
 
+      expect(mockGetPackageWithHistory).toHaveBeenCalledWith('TRK-123')
+      expect(mockCreateSubscription).toHaveBeenCalledWith(
+        expect.objectContaining({
+          trackingNumber: 'TRK-123',
+          trackerReferenceId: 'ref-456',
+          carrierId: 'carrier-789',
+          clientId: 'client-123',
+        })
+      )
       expect(mockSendTrackerUpdate).toHaveBeenCalledWith(expect.any(Object), 'ref-456', 'mock-ulid-123')
     })
 
     it('should call Shopify and Lugus adapters', async () => {
+      mockGetPackageWithHistory.mockResolvedValue({
+        clientId: 'client-123',
+        packageLog: [
+          { eventType: 'pickedUpFromVeho', timestamp: '2024-01-02T10:00:00Z', message: 'Out for delivery' },
+        ],
+      })
+      mockCreateSubscription.mockResolvedValue({})
       mockGetByClientId.mockResolvedValue(MOCK_CONFIG)
-      mockGetPackageEventHistory.mockResolvedValue([
-        { eventType: 'pickedUpFromVeho', timestamp: '2024-01-02T10:00:00Z', message: 'Out for delivery' },
-      ])
       mockSendTrackerUpdate.mockResolvedValue({ success: true })
       mockCreateAttempt.mockResolvedValue({})
 
       await transformationManager.processInitialSubscription(params)
 
-      expect(mockGetPackageEventHistory).toHaveBeenCalledWith('TRK-123')
       expect(mockSendTrackerUpdate).toHaveBeenCalledWith(
         expect.objectContaining({
           trackingNumber: 'TRK-123',
-          carrierId: 'ref-456',
+          carrierId: 'carrier-789',
           events: [{ status: 'OUT_FOR_DELIVERY', happenedAt: '2024-01-02T10:00:00Z', message: 'Out for delivery' }],
         }),
         'ref-456',
@@ -304,8 +333,9 @@ describe('transformationManager', () => {
     })
 
     it('should log delivery attempt', async () => {
+      mockGetPackageWithHistory.mockResolvedValue({ clientId: 'client-123', packageLog: [] })
+      mockCreateSubscription.mockResolvedValue({})
       mockGetByClientId.mockResolvedValue(MOCK_CONFIG)
-      mockGetPackageEventHistory.mockResolvedValue([])
       mockSendTrackerUpdate.mockResolvedValue({ success: true })
       mockCreateAttempt.mockResolvedValue({})
 
@@ -321,12 +351,23 @@ describe('transformationManager', () => {
       )
     })
 
-    it('should skip when no config exists', async () => {
+    it('should skip when Lugus returns no clientId', async () => {
+      mockGetPackageWithHistory.mockResolvedValue({ clientId: null, packageLog: [] })
+
+      await transformationManager.processInitialSubscription(params)
+
+      expect(mockCreateSubscription).not.toHaveBeenCalled()
+      expect(mockSendTrackerUpdate).not.toHaveBeenCalled()
+    })
+
+    it('should create subscription but skip sending when no config exists', async () => {
+      mockGetPackageWithHistory.mockResolvedValue({ clientId: 'client-123', packageLog: [] })
+      mockCreateSubscription.mockResolvedValue({})
       mockGetByClientId.mockResolvedValue(undefined)
 
       await transformationManager.processInitialSubscription(params)
 
-      expect(mockGetPackageEventHistory).not.toHaveBeenCalled()
+      expect(mockCreateSubscription).toHaveBeenCalled()
       expect(mockSendTrackerUpdate).not.toHaveBeenCalled()
     })
   })
@@ -518,7 +559,8 @@ describe('transformationManager', () => {
       expect(trackerAttrs.events).toEqual(EXPECTED_TRACKER_EVENTS)
     })
 
-    it('processStatusRequest: transforms realistic LugusPackageLog[] to TrackerAttributes', async () => {
+    it('processStatusRequest: looks up subscription and transforms realistic LugusPackageLog[] to TrackerAttributes', async () => {
+      mockGetByTrackingNumber.mockResolvedValue(REALISTIC_SUBSCRIPTION)
       mockGetByClientId.mockResolvedValue(REALISTIC_CONFIG)
       mockGetPackageEventHistory.mockResolvedValue(REALISTIC_LUGUS_EVENTS)
       mockSendTrackerUpdate.mockResolvedValue({ success: true })
@@ -526,8 +568,6 @@ describe('transformationManager', () => {
 
       await transformationManager.processStatusRequest({
         trackingNumber: 'VEHO-TRK-12345',
-        trackerReferenceId: 'gid://shopify/Tracker/12345',
-        clientId: 'client-shopify-001',
         webhookId: 'shopify-webhook-abc',
         idempotencyKey: 'shopify-idem-xyz',
       })
@@ -535,29 +575,33 @@ describe('transformationManager', () => {
       const trackerAttrs: TrackerAttributes = mockSendTrackerUpdate.mock.calls[0][0]
 
       expect(trackerAttrs.trackingNumber).toBe('VEHO-TRK-12345')
-      expect(trackerAttrs.carrierId).toBe('gid://shopify/Tracker/12345')
+      expect(trackerAttrs.carrierId).toBe('veho-carrier-id')
       expect(trackerAttrs.events).toEqual(EXPECTED_TRACKER_EVENTS)
 
       // Verbatim pass-through of Shopify webhook params
       expect(mockSendTrackerUpdate).toHaveBeenCalledWith(expect.any(Object), 'shopify-webhook-abc', 'shopify-idem-xyz')
     })
 
-    it('processInitialSubscription: transforms realistic LugusPackageLog[] to TrackerAttributes', async () => {
+    it('processInitialSubscription: fetches clientId from Lugus and transforms packageLog to TrackerAttributes', async () => {
+      mockGetPackageWithHistory.mockResolvedValue({
+        clientId: 'client-shopify-001',
+        packageLog: REALISTIC_LUGUS_EVENTS,
+      })
+      mockCreateSubscription.mockResolvedValue({})
       mockGetByClientId.mockResolvedValue(REALISTIC_CONFIG)
-      mockGetPackageEventHistory.mockResolvedValue(REALISTIC_LUGUS_EVENTS)
       mockSendTrackerUpdate.mockResolvedValue({ success: true })
       mockCreateAttempt.mockResolvedValue({})
 
       await transformationManager.processInitialSubscription({
         trackingNumber: 'VEHO-TRK-12345',
         trackerReferenceId: 'gid://shopify/Tracker/12345',
-        clientId: 'client-shopify-001',
+        carrierId: 'veho-carrier-id',
       })
 
       const trackerAttrs: TrackerAttributes = mockSendTrackerUpdate.mock.calls[0][0]
 
       expect(trackerAttrs.trackingNumber).toBe('VEHO-TRK-12345')
-      expect(trackerAttrs.carrierId).toBe('gid://shopify/Tracker/12345')
+      expect(trackerAttrs.carrierId).toBe('veho-carrier-id')
       expect(trackerAttrs.events).toEqual(EXPECTED_TRACKER_EVENTS)
 
       // Uses trackerReferenceId as webhookId, generates own idempotencyKey
@@ -565,6 +609,16 @@ describe('transformationManager', () => {
         expect.any(Object),
         'gid://shopify/Tracker/12345',
         'mock-ulid-123'
+      )
+
+      // Subscription created with clientId from Lugus
+      expect(mockCreateSubscription).toHaveBeenCalledWith(
+        expect.objectContaining({
+          trackingNumber: 'VEHO-TRK-12345',
+          trackerReferenceId: 'gid://shopify/Tracker/12345',
+          carrierId: 'veho-carrier-id',
+          clientId: 'client-shopify-001',
+        })
       )
     })
   })
