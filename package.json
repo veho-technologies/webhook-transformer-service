@@ -45,6 +45,7 @@
     "pre-compile": "npx projen pre-compile",
     "prepare": "npx projen prepare",
     "prewatch": "npx projen prewatch",
+    "server": "npx projen server",
     "synth": "npx projen synth",
     "synth:dev": "npx projen synth:dev",
     "synth:me": "npx projen synth:me",
@@ -62,7 +63,8 @@
     "watch": "npx projen watch",
     "watch:dev": "npx projen watch:dev",
     "watch:me": "npx projen watch:me",
-    "projen": "npx projen"
+    "projen": "npx projen",
+    "start": "projen server"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.161",
