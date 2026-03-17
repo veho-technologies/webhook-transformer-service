@@ -345,9 +345,7 @@ describe('transformationManager', () => {
         'persisted-ref',
         'mock-ulid-123'
       )
-      expect(mockCreateAttempt).toHaveBeenCalledWith(
-        expect.objectContaining({ trackerReferenceId: 'persisted-ref' })
-      )
+      expect(mockCreateAttempt).toHaveBeenCalledWith(expect.objectContaining({ trackerReferenceId: 'persisted-ref' }))
     })
 
     it('should call Shopify with transformed events', async () => {

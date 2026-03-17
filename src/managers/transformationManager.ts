@@ -48,9 +48,7 @@ function buildTrackerEvents(
     .map(entry => applyFieldMapping(toRecord(entry), { mappings: eventMappings, statusMap }))
     .filter(mapped => {
       const valid =
-        typeof mapped.status === 'string' &&
-        typeof mapped.happenedAt === 'string' &&
-        typeof mapped.message === 'string'
+        typeof mapped.status === 'string' && typeof mapped.happenedAt === 'string' && typeof mapped.message === 'string'
       if (!valid) {
         log.warn(`Skipping event missing required fields (status, happenedAt, message): ${JSON.stringify(mapped)}`)
       }
