@@ -7,6 +7,7 @@ import { type EnrichedPackageEventWithEventLog, transformationManager } from './
 
 const mockGetByTrackingNumber = jest.fn()
 const mockCreateSubscription = jest.fn()
+const mockCreateIfNotExists = jest.fn()
 const mockGetByClientId = jest.fn()
 const mockCreateAttempt = jest.fn()
 const mockSendTrackerUpdate = jest.fn()
@@ -17,6 +18,7 @@ jest.mock('../dataAccessors/trackerSubscriptionDataAccessor', () => ({
   trackerSubscriptionDataAccessor: {
     getByTrackingNumber: (...args: unknown[]) => mockGetByTrackingNumber(...args),
     create: (...args: unknown[]) => mockCreateSubscription(...args),
+    createIfNotExists: (...args: unknown[]) => mockCreateIfNotExists(...args),
   },
 }))
 
@@ -182,6 +184,23 @@ describe('transformationManager', () => {
       expect(mockSendTrackerUpdate).not.toHaveBeenCalled()
     })
 
+    it('should filter out events missing required fields (status, happenedAt, message)', async () => {
+      mockGetByTrackingNumber.mockResolvedValue(MOCK_SUBSCRIPTION)
+      mockGetByClientId.mockResolvedValue({
+        ...MOCK_CONFIG,
+        // only map status — omit happenedAt and message mappings
+        fieldMappings: [{ source: 'eventLog.eventType', target: 'status', transform: 'statusMap' }],
+      })
+      mockSendTrackerUpdate.mockResolvedValue({ success: true })
+      mockCreateAttempt.mockResolvedValue({})
+
+      await transformationManager.processEnrichedPackageEvent(SAMPLE_ENRICHED_EVENT)
+
+      const trackerAttrs = mockSendTrackerUpdate.mock.calls[0][0]
+      // events are missing happenedAt and message → all filtered out
+      expect(trackerAttrs.events).toEqual([])
+    })
+
     it('should apply event-level field mappings with statusMap correctly', async () => {
       mockGetByTrackingNumber.mockResolvedValue(MOCK_SUBSCRIPTION)
       mockGetByClientId.mockResolvedValue(MOCK_CONFIG)
@@ -286,14 +305,9 @@ describe('transformationManager', () => {
       carrierId: 'carrier-789',
     }
 
-    beforeEach(() => {
-      // No existing subscription by default — clearAllMocks doesn't reset implementations
-      mockGetByTrackingNumber.mockResolvedValue(undefined)
-    })
-
-    it('should get clientId from Lugus, create subscription, and generate its own idempotencyKey', async () => {
+    it('should get clientId from Lugus, create subscription via conditional write, and send to Shopify', async () => {
       mockGetPackageWithHistory.mockResolvedValue({ clientId: 'client-123', packageLog: [] })
-      mockCreateSubscription.mockResolvedValue({})
+      mockCreateIfNotExists.mockResolvedValue(MOCK_SUBSCRIPTION)
       mockGetByClientId.mockResolvedValue(MOCK_CONFIG)
       mockSendTrackerUpdate.mockResolvedValue({ success: true })
       mockCreateAttempt.mockResolvedValue({})
@@ -301,7 +315,7 @@ describe('transformationManager', () => {
       await transformationManager.processInitialSubscription(params)
 
       expect(mockGetPackageWithHistory).toHaveBeenCalledWith('TRK-123')
-      expect(mockCreateSubscription).toHaveBeenCalledWith(
+      expect(mockCreateIfNotExists).toHaveBeenCalledWith(
         expect.objectContaining({
           trackingNumber: 'TRK-123',
           trackerReferenceId: 'ref-456',
@@ -312,12 +326,36 @@ describe('transformationManager', () => {
       expect(mockSendTrackerUpdate).toHaveBeenCalledWith(expect.any(Object), 'ref-456', 'mock-ulid-123')
     })
 
-    it('should call Shopify and Lugus adapters', async () => {
+    it('should use persisted trackerReferenceId and carrierId when subscription already existed', async () => {
+      const existingSubscription: TrackerSubscription = {
+        ...MOCK_SUBSCRIPTION,
+        trackerReferenceId: 'persisted-ref',
+        carrierId: 'persisted-carrier',
+      }
+      mockGetPackageWithHistory.mockResolvedValue({ clientId: 'client-123', packageLog: [] })
+      mockCreateIfNotExists.mockResolvedValue(existingSubscription)
+      mockGetByClientId.mockResolvedValue(MOCK_CONFIG)
+      mockSendTrackerUpdate.mockResolvedValue({ success: true })
+      mockCreateAttempt.mockResolvedValue({})
+
+      await transformationManager.processInitialSubscription(params)
+
+      expect(mockSendTrackerUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ carrierId: 'persisted-carrier' }),
+        'persisted-ref',
+        'mock-ulid-123'
+      )
+      expect(mockCreateAttempt).toHaveBeenCalledWith(
+        expect.objectContaining({ trackerReferenceId: 'persisted-ref' })
+      )
+    })
+
+    it('should call Shopify with transformed events', async () => {
       mockGetPackageWithHistory.mockResolvedValue({
         clientId: 'client-123',
         packageLog: [{ eventType: 'pickedUpFromVeho', timestamp: '2024-01-02T10:00:00Z', message: 'Out for delivery' }],
       })
-      mockCreateSubscription.mockResolvedValue({})
+      mockCreateIfNotExists.mockResolvedValue(MOCK_SUBSCRIPTION)
       mockGetByClientId.mockResolvedValue(MOCK_CONFIG)
       mockSendTrackerUpdate.mockResolvedValue({ success: true })
       mockCreateAttempt.mockResolvedValue({})
@@ -337,7 +375,7 @@ describe('transformationManager', () => {
 
     it('should log delivery attempt', async () => {
       mockGetPackageWithHistory.mockResolvedValue({ clientId: 'client-123', packageLog: [] })
-      mockCreateSubscription.mockResolvedValue({})
+      mockCreateIfNotExists.mockResolvedValue(MOCK_SUBSCRIPTION)
       mockGetByClientId.mockResolvedValue(MOCK_CONFIG)
       mockSendTrackerUpdate.mockResolvedValue({ success: true })
       mockCreateAttempt.mockResolvedValue({})
@@ -359,32 +397,19 @@ describe('transformationManager', () => {
 
       await transformationManager.processInitialSubscription(params)
 
-      expect(mockCreateSubscription).not.toHaveBeenCalled()
+      expect(mockCreateIfNotExists).not.toHaveBeenCalled()
       expect(mockSendTrackerUpdate).not.toHaveBeenCalled()
     })
 
-    it('should create subscription but skip sending when no config exists', async () => {
+    it('should write subscription but skip sending when no config exists', async () => {
       mockGetPackageWithHistory.mockResolvedValue({ clientId: 'client-123', packageLog: [] })
-      mockCreateSubscription.mockResolvedValue({})
+      mockCreateIfNotExists.mockResolvedValue(MOCK_SUBSCRIPTION)
       mockGetByClientId.mockResolvedValue(undefined)
 
       await transformationManager.processInitialSubscription(params)
 
-      expect(mockCreateSubscription).toHaveBeenCalled()
+      expect(mockCreateIfNotExists).toHaveBeenCalled()
       expect(mockSendTrackerUpdate).not.toHaveBeenCalled()
-    })
-
-    it('should not overwrite subscription if one already exists (idempotent on retry)', async () => {
-      mockGetPackageWithHistory.mockResolvedValue({ clientId: 'client-123', packageLog: [] })
-      mockGetByTrackingNumber.mockResolvedValue(MOCK_SUBSCRIPTION)
-      mockGetByClientId.mockResolvedValue(MOCK_CONFIG)
-      mockSendTrackerUpdate.mockResolvedValue({ success: true })
-      mockCreateAttempt.mockResolvedValue({})
-
-      await transformationManager.processInitialSubscription(params)
-
-      expect(mockCreateSubscription).not.toHaveBeenCalled()
-      expect(mockSendTrackerUpdate).toHaveBeenCalled()
     })
   })
 
@@ -599,12 +624,11 @@ describe('transformationManager', () => {
     })
 
     it('processInitialSubscription: fetches clientId from Lugus and transforms packageLog to TrackerAttributes', async () => {
-      mockGetByTrackingNumber.mockResolvedValue(undefined)
       mockGetPackageWithHistory.mockResolvedValue({
         clientId: 'client-shopify-001',
         packageLog: REALISTIC_LUGUS_EVENTS,
       })
-      mockCreateSubscription.mockResolvedValue({})
+      mockCreateIfNotExists.mockResolvedValue(REALISTIC_SUBSCRIPTION)
       mockGetByClientId.mockResolvedValue(REALISTIC_CONFIG)
       mockSendTrackerUpdate.mockResolvedValue({ success: true })
       mockCreateAttempt.mockResolvedValue({})
@@ -628,8 +652,8 @@ describe('transformationManager', () => {
         'mock-ulid-123'
       )
 
-      // Subscription created with clientId from Lugus
-      expect(mockCreateSubscription).toHaveBeenCalledWith(
+      // Subscription created via conditional write with clientId from Lugus
+      expect(mockCreateIfNotExists).toHaveBeenCalledWith(
         expect.objectContaining({
           trackingNumber: 'VEHO-TRK-12345',
           trackerReferenceId: 'gid://shopify/Tracker/12345',

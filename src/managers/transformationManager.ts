@@ -44,9 +44,18 @@ function buildTrackerEvents(
   eventMappings: FieldMapping[],
   statusMap: Record<string, string>
 ): TrackerEvent[] {
-  return eventLog.map(
-    entry => applyFieldMapping(toRecord(entry), { mappings: eventMappings, statusMap }) as unknown as TrackerEvent
-  )
+  return eventLog
+    .map(entry => applyFieldMapping(toRecord(entry), { mappings: eventMappings, statusMap }))
+    .filter(mapped => {
+      const valid =
+        typeof mapped.status === 'string' &&
+        typeof mapped.happenedAt === 'string' &&
+        typeof mapped.message === 'string'
+      if (!valid) {
+        log.warn(`Skipping event missing required fields (status, happenedAt, message): ${JSON.stringify(mapped)}`)
+      }
+      return valid
+    }) as unknown as TrackerEvent[]
 }
 
 function getConfigMappings(config: ClientConfig): {
@@ -168,16 +177,13 @@ export const transformationManager = {
       return
     }
 
-    const existing = await trackerSubscriptionDataAccessor.getByTrackingNumber(params.trackingNumber)
-    if (!existing) {
-      await trackerSubscriptionDataAccessor.create({
-        trackingNumber: params.trackingNumber,
-        trackerReferenceId: params.trackerReferenceId,
-        carrierId: params.carrierId,
-        clientId,
-        subscribedAt: new Date().toISOString(),
-      })
-    }
+    const subscription = await trackerSubscriptionDataAccessor.createIfNotExists({
+      trackingNumber: params.trackingNumber,
+      trackerReferenceId: params.trackerReferenceId,
+      carrierId: params.carrierId,
+      clientId,
+      subscribedAt: new Date().toISOString(),
+    })
 
     const config = await clientConfigDataAccessor.getByClientId(clientId)
     if (!config) {
@@ -192,20 +198,20 @@ export const transformationManager = {
     const idempotencyKey = ulid()
     const trackerAttributes: TrackerAttributes = {
       trackingNumber: params.trackingNumber,
-      carrierId: params.carrierId,
+      carrierId: subscription.carrierId,
       events,
     }
 
     const result = await shopifyGraphqlAdapter.sendTrackerUpdate(
       trackerAttributes,
-      params.trackerReferenceId,
+      subscription.trackerReferenceId,
       idempotencyKey
     )
 
     await transformDeliveryAttemptDataAccessor.create({
       trackingNumber: params.trackingNumber,
       clientId,
-      trackerReferenceId: params.trackerReferenceId,
+      trackerReferenceId: subscription.trackerReferenceId,
       status: result.success ? 'success' : 'failure',
       idempotencyKey,
       occurredAt: new Date().toISOString(),
