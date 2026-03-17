@@ -124,7 +124,7 @@ exports[`Snapshot 1`] = `
           "S3Bucket": {
             "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
           },
-          "S3Key": "7765bb41586527dee2b4fe668d9f73ae10599ef583a03229e3225dafee70041f.zip",
+          "S3Key": "2e3dbe56f94f0abf69da9c6b2da23f46122fd3adc59926e24da7d1fc235990d5.zip",
         },
         "Environment": {
           "Variables": {
@@ -735,6 +735,10 @@ exports[`Snapshot 1`] = `
             "AttributeName": "subscribedAt",
             "AttributeType": "S",
           },
+          {
+            "AttributeName": "trackerReferenceId",
+            "AttributeType": "S",
+          },
         ],
         "BillingMode": "PAY_PER_REQUEST",
         "GlobalSecondaryIndexes": [
@@ -743,6 +747,22 @@ exports[`Snapshot 1`] = `
             "KeySchema": [
               {
                 "AttributeName": "clientId",
+                "KeyType": "HASH",
+              },
+              {
+                "AttributeName": "subscribedAt",
+                "KeyType": "RANGE",
+              },
+            ],
+            "Projection": {
+              "ProjectionType": "ALL",
+            },
+          },
+          {
+            "IndexName": "byTrackerReferenceId",
+            "KeySchema": [
+              {
+                "AttributeName": "trackerReferenceId",
                 "KeyType": "HASH",
               },
               {
@@ -774,6 +794,12 @@ exports[`Snapshot 1`] = `
                 },
                 "IndexName": "byClientId",
               },
+              {
+                "ContributorInsightsSpecification": {
+                  "Enabled": false,
+                },
+                "IndexName": "byTrackerReferenceId",
+              },
             ],
             "PointInTimeRecoverySpecification": {
               "PointInTimeRecoveryEnabled": true,
@@ -783,6 +809,10 @@ exports[`Snapshot 1`] = `
             },
           },
         ],
+        "TimeToLiveSpecification": {
+          "AttributeName": "ttl",
+          "Enabled": true,
+        },
       },
       "Type": "AWS::DynamoDB::GlobalTable",
       "UpdateReplacePolicy": "Retain",
@@ -826,7 +856,7 @@ exports[`Snapshot 1`] = `
           },
         ],
         "TimeToLiveSpecification": {
-          "AttributeName": "timeToLive",
+          "AttributeName": "ttl",
           "Enabled": true,
         },
       },

@@ -175,12 +175,15 @@ export const transformationManager = {
       return
     }
 
+    const now = new Date()
+    const sixMonthsTtl = Math.floor(now.getTime() / 1000) + 180 * 24 * 60 * 60
     const subscription = await trackerSubscriptionDataAccessor.createIfNotExists({
       trackingNumber: params.trackingNumber,
       trackerReferenceId: params.trackerReferenceId,
       carrierId: params.carrierId,
       clientId,
-      subscribedAt: new Date().toISOString(),
+      subscribedAt: now.toISOString(),
+      ttl: sixMonthsTtl,
     })
 
     const config = await clientConfigDataAccessor.getByClientId(clientId)

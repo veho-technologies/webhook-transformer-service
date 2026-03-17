@@ -68,4 +68,5 @@ codecov.SHA*
 .outputs.personal.json
 .outputs.personal.json-temp
 !/.vscode/settings.json
+package-lock.json
 !/.projenrc.ts

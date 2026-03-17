@@ -116,4 +116,24 @@ describe('trackerSubscriptionDataAccessor', () => {
       expect(mockQuery).toHaveBeenCalledWith({ index: 'byClientId', partition: 'client-123' })
     })
   })
+
+  describe('getByTrackerReferenceId', () => {
+    it('should return the first item from byTrackerReferenceId index', async () => {
+      mockSend.mockResolvedValue({ Items: [mockSubscription] })
+
+      const result = await trackerSubscriptionDataAccessor.getByTrackerReferenceId('ref-456')
+
+      expect(result).toEqual(mockSubscription)
+      expect(mockTableBuild).toHaveBeenCalledWith(QueryCommand)
+      expect(mockQuery).toHaveBeenCalledWith({ index: 'byTrackerReferenceId', partition: 'ref-456' })
+    })
+
+    it('should return undefined when no items found', async () => {
+      mockSend.mockResolvedValue({ Items: [] })
+
+      const result = await trackerSubscriptionDataAccessor.getByTrackerReferenceId('nonexistent')
+
+      expect(result).toBeUndefined()
+    })
+  })
 })

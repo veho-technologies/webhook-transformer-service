@@ -17,6 +17,9 @@ importers:
       '@veho/cdk':
         specifier: ^15.4.0
         version: 15.4.0(aws-cdk-lib@2.241.0(constructs@10.5.1))(constructs@10.5.1)
+      '@veho/event-types':
+        specifier: ^3.32.0
+        version: 3.32.0(@types/json-schema@7.0.15)
       '@veho/events':
         specifier: ^4.5.0
         version: 4.5.0
@@ -1654,6 +1657,12 @@ packages:
     resolution: {integrity: sha512-ZIfP9gK0rNZLWAanC55VGOeFQl7oA9TgW84McHW7B5Qg9ehFDQtK+75+deZMZj1N4OSeslnSXTB9R2Nwhzw5sw==}
     engines: {node: '>= 18.0.0'}
     hasBin: true
+
+  '@veho/event-types@3.32.0':
+    resolution: {integrity: sha512-fCCOUMcSQKvEDWTq8nJKXHJJ4lnxhwNviJc2ipf5tVwfnmHTBQ0wq8JNXupW68cLuX1UybIEdJb6/jwbalPyGA==}
+    engines: {node: '>= 18.18.0'}
+    peerDependencies:
+      '@types/json-schema': ^7.0.15
 
   '@veho/events@4.5.0':
     resolution: {integrity: sha512-0NsCwSwKHox0ym//ooQWTJkDEXhuAXHQtV9s+mz+t0LrP7eM8TfueWa1KrXUpzmhcjWtp3fJZxH8gYZ99UKWGA==}
@@ -5778,6 +5787,10 @@ snapshots:
       constructs: 10.5.1
 
   '@veho/dx-sdk@1.0.9': {}
+
+  '@veho/event-types@3.32.0(@types/json-schema@7.0.15)':
+    dependencies:
+      '@types/json-schema': 7.0.15
 
   '@veho/events@4.5.0':
     dependencies:
