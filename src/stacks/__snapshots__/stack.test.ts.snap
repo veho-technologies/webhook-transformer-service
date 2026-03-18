@@ -262,7 +262,7 @@ exports[`Snapshot 1`] = `
         "Environment": {
           "Variables": {
             "AWS_NODEJS_CONNECTION_REUSE_ENABLED": "1",
-            "NOW": "1773848455083",
+            "NOW": "1735689600000",
             "REST_API_ID": {
               "Ref": "CrudApiRestApi9FE02207",
             },
@@ -282,7 +282,7 @@ exports[`Snapshot 1`] = `
       },
       "Type": "AWS::Lambda::Function",
     },
-    "CrudApiDeployDefaultStageFnCurrentVersionFC104063a110a60f3b4a1692a3a3e72301cbab5c": {
+    "CrudApiDeployDefaultStageFnCurrentVersionFC104063b316ac3a6c85c525b5d29f9c2f12b395": {
       "Metadata": {
         "aws:cdk:do-not-refactor": true,
       },
@@ -398,7 +398,7 @@ exports[`Snapshot 1`] = `
       "Properties": {
         "ExecuteOnHandlerChange": true,
         "HandlerArn": {
-          "Ref": "CrudApiDeployDefaultStageFnCurrentVersionFC104063a110a60f3b4a1692a3a3e72301cbab5c",
+          "Ref": "CrudApiDeployDefaultStageFnCurrentVersionFC104063b316ac3a6c85c525b5d29f9c2f12b395",
         },
         "InvocationType": "Event",
         "ServiceToken": {

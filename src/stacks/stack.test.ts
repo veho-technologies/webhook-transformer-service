@@ -3,6 +3,14 @@ import { Template } from 'aws-cdk-lib/assertions'
 
 import { WebhookTransformerStack } from './stack'
 
+beforeAll(() => {
+  jest.useFakeTimers({ now: new Date('2025-01-01T00:00:00Z') })
+})
+
+afterAll(() => {
+  jest.useRealTimers()
+})
+
 test('Snapshot', () => {
   const app = new App()
   const stack = new WebhookTransformerStack(app, 'test', {
