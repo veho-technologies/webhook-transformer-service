@@ -7,7 +7,7 @@ export const handler = async (
   event: EventBridgeEvent<'EnrichedPackageEvent', EnrichedPackageEventWithEventLog>
 ): Promise<void> => {
   const trackingNumber = event.detail.entity?.package?.trackingId
-  log.info('Processing EnrichedPackageEvent', { trackingNumber })
+  log.info('Processing EnrichedPackageEvent event', { trackingNumber })
 
   await transformationManager.processEnrichedPackageEvent(event.detail)
 }
