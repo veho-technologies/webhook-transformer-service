@@ -69,6 +69,63 @@ exports[`Snapshot 1`] = `
       },
     },
   },
+  "Outputs": {
+    "CrudApiRestApiEndpoint19F6FA05": {
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "https://",
+            {
+              "Ref": "CrudApiRestApi9FE02207",
+            },
+            ".execute-api.",
+            {
+              "Ref": "AWS::Region",
+            },
+            ".",
+            {
+              "Ref": "AWS::URLSuffix",
+            },
+            "/",
+            {
+              "Ref": "CrudApiRestApiDeploymentStageprod7F32D760",
+            },
+            "/",
+          ],
+        ],
+      },
+    },
+    "ExporttestCrudApiApiUrl": {
+      "Export": {
+        "Name": "test-CrudApi-ApiUrl",
+      },
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "https://",
+            {
+              "Ref": "CrudApiRestApi9FE02207",
+            },
+            ".execute-api.",
+            {
+              "Ref": "AWS::Region",
+            },
+            ".",
+            {
+              "Ref": "AWS::URLSuffix",
+            },
+            "/",
+            {
+              "Ref": "CrudApiRestApiDeploymentStageprod7F32D760",
+            },
+            "/",
+          ],
+        ],
+      },
+    },
+  },
   "Parameters": {
     "BootstrapVersion": {
       "Default": "/cdk-bootstrap/hnb659fds/version",
@@ -77,6 +134,84 @@ exports[`Snapshot 1`] = `
     },
   },
   "Resources": {
+    "AWSCDKTriggerCustomResourceProviderCustomResourceProviderHandler97BECD91": {
+      "DependsOn": [
+        "AWSCDKTriggerCustomResourceProviderCustomResourceProviderRoleE18FAF0A",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "b585179dc46d9100f31367c1eb03e063c4e1a396f99a6a188ac4a05a16ae4fa5.zip",
+        },
+        "Handler": "__entrypoint__.handler",
+        "MemorySize": 128,
+        "Role": {
+          "Fn::GetAtt": [
+            "AWSCDKTriggerCustomResourceProviderCustomResourceProviderRoleE18FAF0A",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs22.x",
+        "Timeout": 900,
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "AWSCDKTriggerCustomResourceProviderCustomResourceProviderRoleE18FAF0A": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Sub": "arn:\${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+          },
+        ],
+        "Policies": [
+          {
+            "PolicyDocument": {
+              "Statement": [
+                {
+                  "Action": [
+                    "lambda:InvokeFunction",
+                  ],
+                  "Effect": "Allow",
+                  "Resource": [
+                    {
+                      "Fn::Join": [
+                        "",
+                        [
+                          {
+                            "Fn::GetAtt": [
+                              "CrudApiDeployDefaultStageFn15114814",
+                              "Arn",
+                            ],
+                          },
+                          ":*",
+                        ],
+                      ],
+                    },
+                  ],
+                },
+              ],
+              "Version": "2012-10-17",
+            },
+            "PolicyName": "Inline",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
     "ClientConfigTableE705763C": {
       "DeletionPolicy": "RetainExceptOnCreate",
       "Properties": {
@@ -111,10 +246,1162 @@ exports[`Snapshot 1`] = `
       "Type": "AWS::DynamoDB::GlobalTable",
       "UpdateReplacePolicy": "Retain",
     },
-    "DynamoSmokeTest3E5D9377": {
+    "CrudApiDeployDefaultStageFn15114814": {
       "DependsOn": [
-        "DynamoSmokeTestServiceRoleDefaultPolicy566D35C3",
-        "DynamoSmokeTestServiceRole5ACEED25",
+        "CrudApiDeployDefaultStageFnServiceRoleDefaultPolicy596FB06B",
+        "CrudApiDeployDefaultStageFnServiceRoleD9C8F9F1",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "e4b9ab2c8644280909935a62ef9d26e98222ed44ba2ee91e14958f774c09e823.zip",
+        },
+        "Description": "src/constructs/apiGateway/deployDefaultStage/deployDefaultStage.lambda.ts",
+        "Environment": {
+          "Variables": {
+            "AWS_NODEJS_CONNECTION_REUSE_ENABLED": "1",
+            "NOW": "1773845847306",
+            "REST_API_ID": {
+              "Ref": "CrudApiRestApi9FE02207",
+            },
+            "STAGE_NAME": {
+              "Ref": "CrudApiRestApiDeploymentStageprod7F32D760",
+            },
+          },
+        },
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "CrudApiDeployDefaultStageFnServiceRoleD9C8F9F1",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs20.x",
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "CrudApiDeployDefaultStageFnCurrentVersionFC10406315a01ad0cfb014eedcc882bad2282f12": {
+      "Metadata": {
+        "aws:cdk:do-not-refactor": true,
+      },
+      "Properties": {
+        "FunctionName": {
+          "Ref": "CrudApiDeployDefaultStageFn15114814",
+        },
+      },
+      "Type": "AWS::Lambda::Version",
+    },
+    "CrudApiDeployDefaultStageFnServiceRoleD9C8F9F1": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "CrudApiDeployDefaultStageFnServiceRoleDefaultPolicy596FB06B": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "apigateway:GET",
+                "apigateway:POST",
+                "apigateway:PATCH",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition",
+                      },
+                      ":apigateway:",
+                      {
+                        "Ref": "AWS::Region",
+                      },
+                      "::/restapis/",
+                      {
+                        "Ref": "CrudApiRestApi9FE02207",
+                      },
+                      "/deployments",
+                    ],
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition",
+                      },
+                      ":apigateway:",
+                      {
+                        "Ref": "AWS::Region",
+                      },
+                      "::/restapis/",
+                      {
+                        "Ref": "CrudApiRestApi9FE02207",
+                      },
+                      "/stages/",
+                      {
+                        "Ref": "CrudApiRestApiDeploymentStageprod7F32D760",
+                      },
+                    ],
+                  ],
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "CrudApiDeployDefaultStageFnServiceRoleDefaultPolicy596FB06B",
+        "Roles": [
+          {
+            "Ref": "CrudApiDeployDefaultStageFnServiceRoleD9C8F9F1",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "CrudApiDeployDefaultStageTrigger09E538A9": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "ExecuteOnHandlerChange": true,
+        "HandlerArn": {
+          "Ref": "CrudApiDeployDefaultStageFnCurrentVersionFC10406315a01ad0cfb014eedcc882bad2282f12",
+        },
+        "InvocationType": "Event",
+        "ServiceToken": {
+          "Fn::GetAtt": [
+            "AWSCDKTriggerCustomResourceProviderCustomResourceProviderHandler97BECD91",
+            "Arn",
+          ],
+        },
+        "Timeout": "120000",
+      },
+      "Type": "Custom::Trigger",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "CrudApiRestApi9FE02207": {
+      "Properties": {
+        "Name": "RestApi",
+      },
+      "Type": "AWS::ApiGateway::RestApi",
+    },
+    "CrudApiRestApiANY0D41D293": {
+      "Properties": {
+        "AuthorizationType": "NONE",
+        "HttpMethod": "ANY",
+        "Integration": {
+          "IntegrationResponses": [
+            {
+              "ResponseTemplates": {
+                "application/json": "{ "message": "Not found" }",
+                "text/plain": "Not found",
+              },
+              "StatusCode": "404",
+            },
+          ],
+          "PassthroughBehavior": "NEVER",
+          "RequestTemplates": {
+            "application/json": "{ "statusCode": 404 }",
+            "text/plain": "{ "statusCode": 404 }",
+          },
+          "Type": "MOCK",
+        },
+        "MethodResponses": [
+          {
+            "ResponseModels": {
+              "application/json": "Empty",
+              "text/plain": "Empty",
+            },
+            "StatusCode": "404",
+          },
+        ],
+        "ResourceId": {
+          "Fn::GetAtt": [
+            "CrudApiRestApi9FE02207",
+            "RootResourceId",
+          ],
+        },
+        "RestApiId": {
+          "Ref": "CrudApiRestApi9FE02207",
+        },
+      },
+      "Type": "AWS::ApiGateway::Method",
+    },
+    "CrudApiRestApiAccount1BA1A058": {
+      "DeletionPolicy": "Retain",
+      "DependsOn": [
+        "CrudApiRestApi9FE02207",
+      ],
+      "Properties": {
+        "CloudWatchRoleArn": {
+          "Fn::GetAtt": [
+            "CrudApiRestApiCloudWatchRole385472E1",
+            "Arn",
+          ],
+        },
+      },
+      "Type": "AWS::ApiGateway::Account",
+      "UpdateReplacePolicy": "Retain",
+    },
+    "CrudApiRestApiCloudWatchRole385472E1": {
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "apigateway.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+      "UpdateReplacePolicy": "Retain",
+    },
+    "CrudApiRestApiDeployment871EF76E16b7f2bfe872d0a546e7bd2d0e9c177c": {
+      "DependsOn": [
+        "CrudApiRestApiproxyANY4B5371D5",
+        "CrudApiRestApiproxy768CB254",
+        "CrudApiRestApiANY0D41D293",
+        "CrudApiRestApiclientsclientIdGETCD19E8C8",
+        "CrudApiRestApiclientsclientIdOPTIONS6B21BBBD",
+        "CrudApiRestApiclientsclientIdPUTFB7F145B",
+        "CrudApiRestApiclientsclientIdD678286B",
+        "CrudApiRestApiclientsGET0052AB9C",
+        "CrudApiRestApiclientsOPTIONS3E34B6D6",
+        "CrudApiRestApiclients280A031D",
+        "CrudApiRestApisubscriptionstrackingNumberGETE8016E99",
+        "CrudApiRestApisubscriptionstrackingNumberOPTIONS18DB635A",
+        "CrudApiRestApisubscriptionstrackingNumber36619BB0",
+        "CrudApiRestApisubscriptionsOPTIONS7850EBAD",
+        "CrudApiRestApisubscriptionsD71C39AA",
+      ],
+      "Metadata": {
+        "aws:cdk:do-not-refactor": true,
+      },
+      "Properties": {
+        "Description": "Automatically created by the RestApi construct",
+        "RestApiId": {
+          "Ref": "CrudApiRestApi9FE02207",
+        },
+      },
+      "Type": "AWS::ApiGateway::Deployment",
+    },
+    "CrudApiRestApiDeploymentStageprod7F32D760": {
+      "DependsOn": [
+        "CrudApiRestApiAccount1BA1A058",
+      ],
+      "Properties": {
+        "AccessLogSetting": {
+          "DestinationArn": {
+            "Fn::GetAtt": [
+              "CrudApiapigatewayA1907314",
+              "Arn",
+            ],
+          },
+          "Format": {
+            "Fn::Join": [
+              "",
+              [
+                "{"region":"",
+                {
+                  "Ref": "AWS::Region",
+                },
+                "","level":"info","awsRequestId":"$context.requestId","sourceIp":"$context.identity.sourceIp","domainName":"$context.domainName","method":"$context.httpMethod","path":"$context.path","status":"$context.status","responseLatency":"$context.responseLatency","errorMessage":"$context.error.message","apigateway.id":"$context.apiId","apigateway.resourcePath":"$context.resourcePath","apigateway.integrationStatus":"$context.integrationStatus","apigateway.integrationLatency":"$context.integrationLatency","apigateway.integrationRequestId":"$context.awsEndpointRequestId","apigateway.authorizerIntegrationStatus":"$context.authorizer.integrationStatus","apigateway.authorizeStatus":"$context.authorize.status","apigateway.authorizeError":"$context.authorize.error","wafResponseCode":"$context.wafResponseCode","timestamp":"$context.requestTime"}",
+              ],
+            ],
+          },
+        },
+        "DeploymentId": {
+          "Ref": "CrudApiRestApiDeployment871EF76E16b7f2bfe872d0a546e7bd2d0e9c177c",
+        },
+        "MethodSettings": [
+          {
+            "DataTraceEnabled": false,
+            "HttpMethod": "*",
+            "LoggingLevel": "OFF",
+            "MetricsEnabled": true,
+            "ResourcePath": "/*",
+          },
+        ],
+        "RestApiId": {
+          "Ref": "CrudApiRestApi9FE02207",
+        },
+        "StageName": "prod",
+        "TracingEnabled": true,
+      },
+      "Type": "AWS::ApiGateway::Stage",
+    },
+    "CrudApiRestApiclients280A031D": {
+      "Properties": {
+        "ParentId": {
+          "Fn::GetAtt": [
+            "CrudApiRestApi9FE02207",
+            "RootResourceId",
+          ],
+        },
+        "PathPart": "clients",
+        "RestApiId": {
+          "Ref": "CrudApiRestApi9FE02207",
+        },
+      },
+      "Type": "AWS::ApiGateway::Resource",
+    },
+    "CrudApiRestApiclientsGET0052AB9C": {
+      "Properties": {
+        "AuthorizationType": "AWS_IAM",
+        "HttpMethod": "GET",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+          "Type": "AWS_PROXY",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region",
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "CrudApigetclientsfn951BCE3D",
+                    "Arn",
+                  ],
+                },
+                "/invocations",
+              ],
+            ],
+          },
+        },
+        "ResourceId": {
+          "Ref": "CrudApiRestApiclients280A031D",
+        },
+        "RestApiId": {
+          "Ref": "CrudApiRestApi9FE02207",
+        },
+      },
+      "Type": "AWS::ApiGateway::Method",
+    },
+    "CrudApiRestApiclientsGETApiPermissionTesttestCrudApiRestApiBFF2509DGETclients439A9090": {
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "CrudApigetclientsfn951BCE3D",
+            "Arn",
+          ],
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition",
+              },
+              ":execute-api:",
+              {
+                "Ref": "AWS::Region",
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId",
+              },
+              ":",
+              {
+                "Ref": "CrudApiRestApi9FE02207",
+              },
+              "/test-invoke-stage/GET/clients",
+            ],
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Permission",
+    },
+    "CrudApiRestApiclientsGETApiPermissiontestCrudApiRestApiBFF2509DGETclients10851392": {
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "CrudApigetclientsfn951BCE3D",
+            "Arn",
+          ],
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition",
+              },
+              ":execute-api:",
+              {
+                "Ref": "AWS::Region",
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId",
+              },
+              ":",
+              {
+                "Ref": "CrudApiRestApi9FE02207",
+              },
+              "/",
+              {
+                "Ref": "CrudApiRestApiDeploymentStageprod7F32D760",
+              },
+              "/GET/clients",
+            ],
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Permission",
+    },
+    "CrudApiRestApiclientsOPTIONS3E34B6D6": {
+      "Properties": {
+        "AuthorizationType": "NONE",
+        "HttpMethod": "OPTIONS",
+        "Integration": {
+          "IntegrationResponses": [
+            {
+              "ResponseTemplates": {
+                "application/json": "["GET"]",
+                "text/plain": "GET",
+              },
+              "StatusCode": "200",
+            },
+          ],
+          "PassthroughBehavior": "NEVER",
+          "RequestTemplates": {
+            "application/json": "{ "statusCode": 200 }",
+            "text/plain": "{ "statusCode": 200 }",
+          },
+          "Type": "MOCK",
+        },
+        "MethodResponses": [
+          {
+            "ResponseModels": {
+              "application/json": "Empty",
+              "text/plain": "Empty",
+            },
+            "StatusCode": "200",
+          },
+        ],
+        "ResourceId": {
+          "Ref": "CrudApiRestApiclients280A031D",
+        },
+        "RestApiId": {
+          "Ref": "CrudApiRestApi9FE02207",
+        },
+      },
+      "Type": "AWS::ApiGateway::Method",
+    },
+    "CrudApiRestApiclientsclientIdD678286B": {
+      "Properties": {
+        "ParentId": {
+          "Ref": "CrudApiRestApiclients280A031D",
+        },
+        "PathPart": "{clientId}",
+        "RestApiId": {
+          "Ref": "CrudApiRestApi9FE02207",
+        },
+      },
+      "Type": "AWS::ApiGateway::Resource",
+    },
+    "CrudApiRestApiclientsclientIdGETApiPermissionTesttestCrudApiRestApiBFF2509DGETclientsclientId251CE809": {
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "CrudApigetclientsclientIdfnCF95176E",
+            "Arn",
+          ],
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition",
+              },
+              ":execute-api:",
+              {
+                "Ref": "AWS::Region",
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId",
+              },
+              ":",
+              {
+                "Ref": "CrudApiRestApi9FE02207",
+              },
+              "/test-invoke-stage/GET/clients/*",
+            ],
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Permission",
+    },
+    "CrudApiRestApiclientsclientIdGETApiPermissiontestCrudApiRestApiBFF2509DGETclientsclientId652D22A6": {
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "CrudApigetclientsclientIdfnCF95176E",
+            "Arn",
+          ],
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition",
+              },
+              ":execute-api:",
+              {
+                "Ref": "AWS::Region",
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId",
+              },
+              ":",
+              {
+                "Ref": "CrudApiRestApi9FE02207",
+              },
+              "/",
+              {
+                "Ref": "CrudApiRestApiDeploymentStageprod7F32D760",
+              },
+              "/GET/clients/*",
+            ],
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Permission",
+    },
+    "CrudApiRestApiclientsclientIdGETCD19E8C8": {
+      "Properties": {
+        "AuthorizationType": "AWS_IAM",
+        "HttpMethod": "GET",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+          "Type": "AWS_PROXY",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region",
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "CrudApigetclientsclientIdfnCF95176E",
+                    "Arn",
+                  ],
+                },
+                "/invocations",
+              ],
+            ],
+          },
+        },
+        "ResourceId": {
+          "Ref": "CrudApiRestApiclientsclientIdD678286B",
+        },
+        "RestApiId": {
+          "Ref": "CrudApiRestApi9FE02207",
+        },
+      },
+      "Type": "AWS::ApiGateway::Method",
+    },
+    "CrudApiRestApiclientsclientIdOPTIONS6B21BBBD": {
+      "Properties": {
+        "AuthorizationType": "NONE",
+        "HttpMethod": "OPTIONS",
+        "Integration": {
+          "IntegrationResponses": [
+            {
+              "ResponseTemplates": {
+                "application/json": "["GET","PUT"]",
+                "text/plain": "GET,PUT",
+              },
+              "StatusCode": "200",
+            },
+          ],
+          "PassthroughBehavior": "NEVER",
+          "RequestTemplates": {
+            "application/json": "{ "statusCode": 200 }",
+            "text/plain": "{ "statusCode": 200 }",
+          },
+          "Type": "MOCK",
+        },
+        "MethodResponses": [
+          {
+            "ResponseModels": {
+              "application/json": "Empty",
+              "text/plain": "Empty",
+            },
+            "StatusCode": "200",
+          },
+        ],
+        "ResourceId": {
+          "Ref": "CrudApiRestApiclientsclientIdD678286B",
+        },
+        "RestApiId": {
+          "Ref": "CrudApiRestApi9FE02207",
+        },
+      },
+      "Type": "AWS::ApiGateway::Method",
+    },
+    "CrudApiRestApiclientsclientIdPUTApiPermissionTesttestCrudApiRestApiBFF2509DPUTclientsclientId2C4F1340": {
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "CrudApiputclientsclientIdfn3CC4BF7F",
+            "Arn",
+          ],
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition",
+              },
+              ":execute-api:",
+              {
+                "Ref": "AWS::Region",
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId",
+              },
+              ":",
+              {
+                "Ref": "CrudApiRestApi9FE02207",
+              },
+              "/test-invoke-stage/PUT/clients/*",
+            ],
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Permission",
+    },
+    "CrudApiRestApiclientsclientIdPUTApiPermissiontestCrudApiRestApiBFF2509DPUTclientsclientId452682F9": {
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "CrudApiputclientsclientIdfn3CC4BF7F",
+            "Arn",
+          ],
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition",
+              },
+              ":execute-api:",
+              {
+                "Ref": "AWS::Region",
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId",
+              },
+              ":",
+              {
+                "Ref": "CrudApiRestApi9FE02207",
+              },
+              "/",
+              {
+                "Ref": "CrudApiRestApiDeploymentStageprod7F32D760",
+              },
+              "/PUT/clients/*",
+            ],
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Permission",
+    },
+    "CrudApiRestApiclientsclientIdPUTFB7F145B": {
+      "Properties": {
+        "AuthorizationType": "AWS_IAM",
+        "HttpMethod": "PUT",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+          "Type": "AWS_PROXY",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region",
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "CrudApiputclientsclientIdfn3CC4BF7F",
+                    "Arn",
+                  ],
+                },
+                "/invocations",
+              ],
+            ],
+          },
+        },
+        "ResourceId": {
+          "Ref": "CrudApiRestApiclientsclientIdD678286B",
+        },
+        "RestApiId": {
+          "Ref": "CrudApiRestApi9FE02207",
+        },
+      },
+      "Type": "AWS::ApiGateway::Method",
+    },
+    "CrudApiRestApiproxy768CB254": {
+      "Properties": {
+        "ParentId": {
+          "Fn::GetAtt": [
+            "CrudApiRestApi9FE02207",
+            "RootResourceId",
+          ],
+        },
+        "PathPart": "{proxy+}",
+        "RestApiId": {
+          "Ref": "CrudApiRestApi9FE02207",
+        },
+      },
+      "Type": "AWS::ApiGateway::Resource",
+    },
+    "CrudApiRestApiproxyANY4B5371D5": {
+      "Properties": {
+        "AuthorizationType": "NONE",
+        "HttpMethod": "ANY",
+        "Integration": {
+          "IntegrationResponses": [
+            {
+              "ResponseTemplates": {
+                "application/json": "{ "message": "Not found" }",
+                "text/plain": "Not found",
+              },
+              "StatusCode": "404",
+            },
+          ],
+          "PassthroughBehavior": "NEVER",
+          "RequestTemplates": {
+            "application/json": "{ "statusCode": 404 }",
+            "text/plain": "{ "statusCode": 404 }",
+          },
+          "Type": "MOCK",
+        },
+        "MethodResponses": [
+          {
+            "ResponseModels": {
+              "application/json": "Empty",
+              "text/plain": "Empty",
+            },
+            "StatusCode": "404",
+          },
+        ],
+        "ResourceId": {
+          "Ref": "CrudApiRestApiproxy768CB254",
+        },
+        "RestApiId": {
+          "Ref": "CrudApiRestApi9FE02207",
+        },
+      },
+      "Type": "AWS::ApiGateway::Method",
+    },
+    "CrudApiRestApisubscriptionsD71C39AA": {
+      "Properties": {
+        "ParentId": {
+          "Fn::GetAtt": [
+            "CrudApiRestApi9FE02207",
+            "RootResourceId",
+          ],
+        },
+        "PathPart": "subscriptions",
+        "RestApiId": {
+          "Ref": "CrudApiRestApi9FE02207",
+        },
+      },
+      "Type": "AWS::ApiGateway::Resource",
+    },
+    "CrudApiRestApisubscriptionsOPTIONS7850EBAD": {
+      "Properties": {
+        "AuthorizationType": "NONE",
+        "HttpMethod": "OPTIONS",
+        "Integration": {
+          "IntegrationResponses": [
+            {
+              "ResponseTemplates": {
+                "application/json": "[]",
+                "text/plain": "",
+              },
+              "StatusCode": "200",
+            },
+          ],
+          "PassthroughBehavior": "NEVER",
+          "RequestTemplates": {
+            "application/json": "{ "statusCode": 200 }",
+            "text/plain": "{ "statusCode": 200 }",
+          },
+          "Type": "MOCK",
+        },
+        "MethodResponses": [
+          {
+            "ResponseModels": {
+              "application/json": "Empty",
+              "text/plain": "Empty",
+            },
+            "StatusCode": "200",
+          },
+        ],
+        "ResourceId": {
+          "Ref": "CrudApiRestApisubscriptionsD71C39AA",
+        },
+        "RestApiId": {
+          "Ref": "CrudApiRestApi9FE02207",
+        },
+      },
+      "Type": "AWS::ApiGateway::Method",
+    },
+    "CrudApiRestApisubscriptionstrackingNumber36619BB0": {
+      "Properties": {
+        "ParentId": {
+          "Ref": "CrudApiRestApisubscriptionsD71C39AA",
+        },
+        "PathPart": "{trackingNumber}",
+        "RestApiId": {
+          "Ref": "CrudApiRestApi9FE02207",
+        },
+      },
+      "Type": "AWS::ApiGateway::Resource",
+    },
+    "CrudApiRestApisubscriptionstrackingNumberGETApiPermissionTesttestCrudApiRestApiBFF2509DGETsubscriptionstrackingNumberA7083C99": {
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "CrudApigetsubscriptionstrackingNumberfn0B61514A",
+            "Arn",
+          ],
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition",
+              },
+              ":execute-api:",
+              {
+                "Ref": "AWS::Region",
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId",
+              },
+              ":",
+              {
+                "Ref": "CrudApiRestApi9FE02207",
+              },
+              "/test-invoke-stage/GET/subscriptions/*",
+            ],
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Permission",
+    },
+    "CrudApiRestApisubscriptionstrackingNumberGETApiPermissiontestCrudApiRestApiBFF2509DGETsubscriptionstrackingNumberC85B0C21": {
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "CrudApigetsubscriptionstrackingNumberfn0B61514A",
+            "Arn",
+          ],
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition",
+              },
+              ":execute-api:",
+              {
+                "Ref": "AWS::Region",
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId",
+              },
+              ":",
+              {
+                "Ref": "CrudApiRestApi9FE02207",
+              },
+              "/",
+              {
+                "Ref": "CrudApiRestApiDeploymentStageprod7F32D760",
+              },
+              "/GET/subscriptions/*",
+            ],
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Permission",
+    },
+    "CrudApiRestApisubscriptionstrackingNumberGETE8016E99": {
+      "Properties": {
+        "AuthorizationType": "AWS_IAM",
+        "HttpMethod": "GET",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+          "Type": "AWS_PROXY",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region",
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "CrudApigetsubscriptionstrackingNumberfn0B61514A",
+                    "Arn",
+                  ],
+                },
+                "/invocations",
+              ],
+            ],
+          },
+        },
+        "ResourceId": {
+          "Ref": "CrudApiRestApisubscriptionstrackingNumber36619BB0",
+        },
+        "RestApiId": {
+          "Ref": "CrudApiRestApi9FE02207",
+        },
+      },
+      "Type": "AWS::ApiGateway::Method",
+    },
+    "CrudApiRestApisubscriptionstrackingNumberOPTIONS18DB635A": {
+      "Properties": {
+        "AuthorizationType": "NONE",
+        "HttpMethod": "OPTIONS",
+        "Integration": {
+          "IntegrationResponses": [
+            {
+              "ResponseTemplates": {
+                "application/json": "["GET"]",
+                "text/plain": "GET",
+              },
+              "StatusCode": "200",
+            },
+          ],
+          "PassthroughBehavior": "NEVER",
+          "RequestTemplates": {
+            "application/json": "{ "statusCode": 200 }",
+            "text/plain": "{ "statusCode": 200 }",
+          },
+          "Type": "MOCK",
+        },
+        "MethodResponses": [
+          {
+            "ResponseModels": {
+              "application/json": "Empty",
+              "text/plain": "Empty",
+            },
+            "StatusCode": "200",
+          },
+        ],
+        "ResourceId": {
+          "Ref": "CrudApiRestApisubscriptionstrackingNumber36619BB0",
+        },
+        "RestApiId": {
+          "Ref": "CrudApiRestApi9FE02207",
+        },
+      },
+      "Type": "AWS::ApiGateway::Method",
+    },
+    "CrudApiRestApiwafassociationBBC9E3BA": {
+      "Properties": {
+        "ResourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition",
+              },
+              ":apigateway:",
+              {
+                "Ref": "AWS::Region",
+              },
+              "::/restapis/",
+              {
+                "Ref": "CrudApiRestApi9FE02207",
+              },
+              "/stages/",
+              {
+                "Ref": "CrudApiRestApiDeploymentStageprod7F32D760",
+              },
+            ],
+          ],
+        },
+        "WebACLArn": {
+          "Fn::ImportValue": "VehoSharedWAFArn",
+        },
+      },
+      "Type": "AWS::WAFv2::WebACLAssociation",
+    },
+    "CrudApiapigatewayA1907314": {
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "RetentionInDays": 30,
+      },
+      "Type": "AWS::Logs::LogGroup",
+      "UpdateReplacePolicy": "Retain",
+    },
+    "CrudApiapigatewayservicecontextCB951AE7": {
+      "DependsOn": [
+        "CrudApiapigatewayA1907314",
+      ],
+      "Properties": {
+        "LogGroupIdentifier": {
+          "Ref": "CrudApiapigatewayA1907314",
+        },
+        "TransformerConfig": [
+          {
+            "ParseJSON": {},
+          },
+          {
+            "AddKeys": {
+              "Entries": [
+                {
+                  "Key": "service",
+                  "Value": "test-service",
+                },
+                {
+                  "Key": "region",
+                  "Value": {
+                    "Ref": "AWS::Region",
+                  },
+                },
+                {
+                  "Key": "team",
+                  "Value": "growth",
+                },
+                {
+                  "Key": "environment",
+                  "Value": "test",
+                },
+              ],
+            },
+          },
+        ],
+      },
+      "Type": "AWS::Logs::Transformer",
+    },
+    "CrudApigetclientsclientIdfnCF95176E": {
+      "DependsOn": [
+        "CrudApigetclientsclientIdfnServiceRoleDefaultPolicyCAD4AB9C",
+        "CrudApigetclientsclientIdfnServiceRole9CD5517C",
       ],
       "Properties": {
         "Architectures": [
@@ -124,7 +1411,7 @@ exports[`Snapshot 1`] = `
           "S3Bucket": {
             "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
           },
-          "S3Key": "2e3dbe56f94f0abf69da9c6b2da23f46122fd3adc59926e24da7d1fc235990d5.zip",
+          "S3Key": "95236a78f41881926446380c312fe5ae53a63d3e5fb9a3fe09e443fe0c92a7bc.zip",
         },
         "Environment": {
           "Variables": {
@@ -219,13 +1506,13 @@ exports[`Snapshot 1`] = `
           "ApplicationLogLevel": "INFO",
           "LogFormat": "JSON",
           "LogGroup": {
-            "Ref": "DynamoSmokeTestlogsC71B6884",
+            "Ref": "CrudApigetclientsclientIdfnlogs957144BA",
           },
         },
         "MemorySize": 1048,
         "Role": {
           "Fn::GetAtt": [
-            "DynamoSmokeTestServiceRole5ACEED25",
+            "CrudApigetclientsclientIdfnServiceRole9CD5517C",
             "Arn",
           ],
         },
@@ -237,7 +1524,7 @@ exports[`Snapshot 1`] = `
       },
       "Type": "AWS::Lambda::Function",
     },
-    "DynamoSmokeTestServiceRole5ACEED25": {
+    "CrudApigetclientsclientIdfnServiceRole9CD5517C": {
       "Properties": {
         "AssumeRolePolicyDocument": {
           "Statement": [
@@ -268,7 +1555,7 @@ exports[`Snapshot 1`] = `
       },
       "Type": "AWS::IAM::Role",
     },
-    "DynamoSmokeTestServiceRoleDefaultPolicy566D35C3": {
+    "CrudApigetclientsclientIdfnServiceRoleDefaultPolicyCAD4AB9C": {
       "Properties": {
         "PolicyDocument": {
           "Statement": [
@@ -454,16 +1741,16 @@ exports[`Snapshot 1`] = `
           ],
           "Version": "2012-10-17",
         },
-        "PolicyName": "DynamoSmokeTestServiceRoleDefaultPolicy566D35C3",
+        "PolicyName": "CrudApigetclientsclientIdfnServiceRoleDefaultPolicyCAD4AB9C",
         "Roles": [
           {
-            "Ref": "DynamoSmokeTestServiceRole5ACEED25",
+            "Ref": "CrudApigetclientsclientIdfnServiceRole9CD5517C",
           },
         ],
       },
       "Type": "AWS::IAM::Policy",
     },
-    "DynamoSmokeTestlogsC71B6884": {
+    "CrudApigetclientsclientIdfnlogs957144BA": {
       "DeletionPolicy": "Retain",
       "Properties": {
         "LogGroupClass": "INFREQUENT_ACCESS",
@@ -478,10 +1765,10 @@ exports[`Snapshot 1`] = `
       "Type": "AWS::Logs::LogGroup",
       "UpdateReplacePolicy": "Retain",
     },
-    "LugusSmoke827D9A7E": {
+    "CrudApigetclientsfn951BCE3D": {
       "DependsOn": [
-        "LugusSmokeServiceRoleDefaultPolicyA4DE00C1",
-        "LugusSmokeServiceRole81BD16B1",
+        "CrudApigetclientsfnServiceRoleDefaultPolicyD21503C4",
+        "CrudApigetclientsfnServiceRole53538A3F",
       ],
       "Properties": {
         "Architectures": [
@@ -491,11 +1778,1247 @@ exports[`Snapshot 1`] = `
           "S3Bucket": {
             "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
           },
-          "S3Key": "4ddcf40dc4cfc5ad81adc6a09c05bf624051b81d1ffaffaad0e31a6c327787e7.zip",
+          "S3Key": "d770e8a65894e060a622db43160c946d5a44a1d189669f7f5dfb397a8d7c968d.zip",
         },
         "Environment": {
           "Variables": {
             "AWS_CRT_NODEJS_BINARY_RELATIVE_PATH": "bin/linux-arm64-glibc/aws-crt-nodejs.node",
+            "CLIENT_CONFIG_TABLE_NAME": {
+              "Ref": "ClientConfigTableE705763C",
+            },
+            "ENVIRONMENT": "test",
+            "EVENTBUS_ARN": {
+              "Fn::Join": [
+                "",
+                [
+                  "arn:",
+                  {
+                    "Ref": "AWS::Partition",
+                  },
+                  ":events:",
+                  {
+                    "Ref": "AWS::Region",
+                  },
+                  ":",
+                  {
+                    "Ref": "AWS::AccountId",
+                  },
+                  ":event-bus/bifrost",
+                ],
+              ],
+            },
+            "LOG_LEVEL": "info",
+            "NEW_RELIC_ACCOUNT_ID": "3433923",
+            "NEW_RELIC_EXTENSION_LOG_LEVEL": "INFO",
+            "NEW_RELIC_EXTENSION_SEND_EXTENSION_LOGS": "false",
+            "NEW_RELIC_EXTENSION_SEND_FUNCTION_LOGS": "true",
+            "NEW_RELIC_LAMBDA_HANDLER": "index.handler",
+            "NODE_ENV": "production",
+            "NR_TAGS": {
+              "Fn::Join": [
+                "",
+                [
+                  "service:test-service;region:",
+                  {
+                    "Ref": "AWS::Region",
+                  },
+                  ";environment:test;team:growth",
+                ],
+              ],
+            },
+            "PARAMETERS_SECRETS_EXTENSION_CACHE_ENABLED": "true",
+            "PARAMETERS_SECRETS_EXTENSION_CACHE_SIZE": "1000",
+            "PARAMETERS_SECRETS_EXTENSION_HTTP_PORT": "2773",
+            "PARAMETERS_SECRETS_EXTENSION_LOG_LEVEL": "warn",
+            "PARAMETERS_SECRETS_EXTENSION_MAX_CONNECTIONS": "3",
+            "SECRETS_MANAGER_TIMEOUT_MILLIS": "0",
+            "SECRETS_MANAGER_TTL": "300",
+            "SERVICE_NAME": "test-service",
+            "SSM_PARAMETER_STORE_TIMEOUT_MILLIS": "0",
+            "SSM_PARAMETER_STORE_TTL": "300",
+            "STACK_NAME": "test",
+            "TRACKER_SUBSCRIPTION_TABLE_NAME": {
+              "Ref": "TrackerSubscriptionTable408C8229",
+            },
+            "TRANSFORM_DELIVERY_ATTEMPT_TABLE_NAME": {
+              "Ref": "TransformDeliveryAttemptTable4673E1C9",
+            },
+          },
+        },
+        "Handler": "newrelic-lambda-wrapper.handler",
+        "Layers": [
+          {
+            "Fn::FindInMap": [
+              "ParamsandsecretslayerMap",
+              {
+                "Ref": "AWS::Region",
+              },
+              "1x0x103xarm64",
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:aws:lambda:",
+                {
+                  "Ref": "AWS::Region",
+                },
+                ":451483290750:layer:NewRelicNodeJS20XARM64:96",
+              ],
+            ],
+          },
+        ],
+        "LoggingConfig": {
+          "ApplicationLogLevel": "INFO",
+          "LogFormat": "JSON",
+          "LogGroup": {
+            "Ref": "CrudApigetclientsfnlogsAC96B13A",
+          },
+        },
+        "MemorySize": 1048,
+        "Role": {
+          "Fn::GetAtt": [
+            "CrudApigetclientsfnServiceRole53538A3F",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs20.x",
+        "Timeout": 30,
+        "TracingConfig": {
+          "Mode": "Active",
+        },
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "CrudApigetclientsfnServiceRole53538A3F": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "CrudApigetclientsfnServiceRoleDefaultPolicyD21503C4": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "NewRelicLicenseKeySecret-NewRelic-LicenseKeySecretARN",
+              },
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition",
+                    },
+                    ":secretsmanager:",
+                    {
+                      "Ref": "AWS::Region",
+                    },
+                    ":",
+                    {
+                      "Ref": "AWS::AccountId",
+                    },
+                    ":secret:/shared/statsig-??????",
+                  ],
+                ],
+              },
+            },
+            {
+              "Action": [
+                "dynamodb:BatchGetItem",
+                "dynamodb:Query",
+                "dynamodb:GetItem",
+                "dynamodb:Scan",
+                "dynamodb:ConditionCheckItem",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:DescribeTable",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "ClientConfigTableE705763C",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
+                "dynamodb:GetRecords",
+                "dynamodb:GetShardIterator",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "ClientConfigTableE705763C",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
+                "dynamodb:BatchGetItem",
+                "dynamodb:Query",
+                "dynamodb:GetItem",
+                "dynamodb:Scan",
+                "dynamodb:ConditionCheckItem",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:DescribeTable",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "TrackerSubscriptionTable408C8229",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "TrackerSubscriptionTable408C8229",
+                          "Arn",
+                        ],
+                      },
+                      "/index/*",
+                    ],
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": [
+                "dynamodb:GetRecords",
+                "dynamodb:GetShardIterator",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "TrackerSubscriptionTable408C8229",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "TrackerSubscriptionTable408C8229",
+                          "Arn",
+                        ],
+                      },
+                      "/index/*",
+                    ],
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": [
+                "dynamodb:BatchGetItem",
+                "dynamodb:Query",
+                "dynamodb:GetItem",
+                "dynamodb:Scan",
+                "dynamodb:ConditionCheckItem",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:DescribeTable",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "TransformDeliveryAttemptTable4673E1C9",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
+                "dynamodb:GetRecords",
+                "dynamodb:GetShardIterator",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "TransformDeliveryAttemptTable4673E1C9",
+                  "Arn",
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "CrudApigetclientsfnServiceRoleDefaultPolicyD21503C4",
+        "Roles": [
+          {
+            "Ref": "CrudApigetclientsfnServiceRole53538A3F",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "CrudApigetclientsfnlogsAC96B13A": {
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "LogGroupClass": "INFREQUENT_ACCESS",
+        "RetentionInDays": 30,
+        "Tags": [
+          {
+            "Key": "SkipNewRelic",
+            "Value": "true",
+          },
+        ],
+      },
+      "Type": "AWS::Logs::LogGroup",
+      "UpdateReplacePolicy": "Retain",
+    },
+    "CrudApigetsubscriptionstrackingNumberfn0B61514A": {
+      "DependsOn": [
+        "CrudApigetsubscriptionstrackingNumberfnServiceRoleDefaultPolicy5CB55FA0",
+        "CrudApigetsubscriptionstrackingNumberfnServiceRole05D4B0BB",
+      ],
+      "Properties": {
+        "Architectures": [
+          "arm64",
+        ],
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "1617cfc8fb415b277eda02ad1e316d4fcfa209e38fb19b17a948786184ec9047.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "AWS_CRT_NODEJS_BINARY_RELATIVE_PATH": "bin/linux-arm64-glibc/aws-crt-nodejs.node",
+            "CLIENT_CONFIG_TABLE_NAME": {
+              "Ref": "ClientConfigTableE705763C",
+            },
+            "ENVIRONMENT": "test",
+            "EVENTBUS_ARN": {
+              "Fn::Join": [
+                "",
+                [
+                  "arn:",
+                  {
+                    "Ref": "AWS::Partition",
+                  },
+                  ":events:",
+                  {
+                    "Ref": "AWS::Region",
+                  },
+                  ":",
+                  {
+                    "Ref": "AWS::AccountId",
+                  },
+                  ":event-bus/bifrost",
+                ],
+              ],
+            },
+            "LOG_LEVEL": "info",
+            "NEW_RELIC_ACCOUNT_ID": "3433923",
+            "NEW_RELIC_EXTENSION_LOG_LEVEL": "INFO",
+            "NEW_RELIC_EXTENSION_SEND_EXTENSION_LOGS": "false",
+            "NEW_RELIC_EXTENSION_SEND_FUNCTION_LOGS": "true",
+            "NEW_RELIC_LAMBDA_HANDLER": "index.handler",
+            "NODE_ENV": "production",
+            "NR_TAGS": {
+              "Fn::Join": [
+                "",
+                [
+                  "service:test-service;region:",
+                  {
+                    "Ref": "AWS::Region",
+                  },
+                  ";environment:test;team:growth",
+                ],
+              ],
+            },
+            "PARAMETERS_SECRETS_EXTENSION_CACHE_ENABLED": "true",
+            "PARAMETERS_SECRETS_EXTENSION_CACHE_SIZE": "1000",
+            "PARAMETERS_SECRETS_EXTENSION_HTTP_PORT": "2773",
+            "PARAMETERS_SECRETS_EXTENSION_LOG_LEVEL": "warn",
+            "PARAMETERS_SECRETS_EXTENSION_MAX_CONNECTIONS": "3",
+            "SECRETS_MANAGER_TIMEOUT_MILLIS": "0",
+            "SECRETS_MANAGER_TTL": "300",
+            "SERVICE_NAME": "test-service",
+            "SSM_PARAMETER_STORE_TIMEOUT_MILLIS": "0",
+            "SSM_PARAMETER_STORE_TTL": "300",
+            "STACK_NAME": "test",
+            "TRACKER_SUBSCRIPTION_TABLE_NAME": {
+              "Ref": "TrackerSubscriptionTable408C8229",
+            },
+            "TRANSFORM_DELIVERY_ATTEMPT_TABLE_NAME": {
+              "Ref": "TransformDeliveryAttemptTable4673E1C9",
+            },
+          },
+        },
+        "Handler": "newrelic-lambda-wrapper.handler",
+        "Layers": [
+          {
+            "Fn::FindInMap": [
+              "ParamsandsecretslayerMap",
+              {
+                "Ref": "AWS::Region",
+              },
+              "1x0x103xarm64",
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:aws:lambda:",
+                {
+                  "Ref": "AWS::Region",
+                },
+                ":451483290750:layer:NewRelicNodeJS20XARM64:96",
+              ],
+            ],
+          },
+        ],
+        "LoggingConfig": {
+          "ApplicationLogLevel": "INFO",
+          "LogFormat": "JSON",
+          "LogGroup": {
+            "Ref": "CrudApigetsubscriptionstrackingNumberfnlogs473E3021",
+          },
+        },
+        "MemorySize": 1048,
+        "Role": {
+          "Fn::GetAtt": [
+            "CrudApigetsubscriptionstrackingNumberfnServiceRole05D4B0BB",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs20.x",
+        "Timeout": 30,
+        "TracingConfig": {
+          "Mode": "Active",
+        },
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "CrudApigetsubscriptionstrackingNumberfnServiceRole05D4B0BB": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "CrudApigetsubscriptionstrackingNumberfnServiceRoleDefaultPolicy5CB55FA0": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "NewRelicLicenseKeySecret-NewRelic-LicenseKeySecretARN",
+              },
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition",
+                    },
+                    ":secretsmanager:",
+                    {
+                      "Ref": "AWS::Region",
+                    },
+                    ":",
+                    {
+                      "Ref": "AWS::AccountId",
+                    },
+                    ":secret:/shared/statsig-??????",
+                  ],
+                ],
+              },
+            },
+            {
+              "Action": [
+                "dynamodb:BatchGetItem",
+                "dynamodb:Query",
+                "dynamodb:GetItem",
+                "dynamodb:Scan",
+                "dynamodb:ConditionCheckItem",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:DescribeTable",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "ClientConfigTableE705763C",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
+                "dynamodb:GetRecords",
+                "dynamodb:GetShardIterator",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "ClientConfigTableE705763C",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
+                "dynamodb:BatchGetItem",
+                "dynamodb:Query",
+                "dynamodb:GetItem",
+                "dynamodb:Scan",
+                "dynamodb:ConditionCheckItem",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:DescribeTable",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "TrackerSubscriptionTable408C8229",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "TrackerSubscriptionTable408C8229",
+                          "Arn",
+                        ],
+                      },
+                      "/index/*",
+                    ],
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": [
+                "dynamodb:GetRecords",
+                "dynamodb:GetShardIterator",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "TrackerSubscriptionTable408C8229",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "TrackerSubscriptionTable408C8229",
+                          "Arn",
+                        ],
+                      },
+                      "/index/*",
+                    ],
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": [
+                "dynamodb:BatchGetItem",
+                "dynamodb:Query",
+                "dynamodb:GetItem",
+                "dynamodb:Scan",
+                "dynamodb:ConditionCheckItem",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:DescribeTable",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "TransformDeliveryAttemptTable4673E1C9",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
+                "dynamodb:GetRecords",
+                "dynamodb:GetShardIterator",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "TransformDeliveryAttemptTable4673E1C9",
+                  "Arn",
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "CrudApigetsubscriptionstrackingNumberfnServiceRoleDefaultPolicy5CB55FA0",
+        "Roles": [
+          {
+            "Ref": "CrudApigetsubscriptionstrackingNumberfnServiceRole05D4B0BB",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "CrudApigetsubscriptionstrackingNumberfnlogs473E3021": {
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "LogGroupClass": "INFREQUENT_ACCESS",
+        "RetentionInDays": 30,
+        "Tags": [
+          {
+            "Key": "SkipNewRelic",
+            "Value": "true",
+          },
+        ],
+      },
+      "Type": "AWS::Logs::LogGroup",
+      "UpdateReplacePolicy": "Retain",
+    },
+    "CrudApiputclientsclientIdfn3CC4BF7F": {
+      "DependsOn": [
+        "CrudApiputclientsclientIdfnServiceRoleDefaultPolicyF5B0398D",
+        "CrudApiputclientsclientIdfnServiceRole61F0EA3E",
+      ],
+      "Properties": {
+        "Architectures": [
+          "arm64",
+        ],
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "ae8724ecd6b7b4d997a168ebf86957fb19c16247ef545dbbdd259233919ecce0.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "AWS_CRT_NODEJS_BINARY_RELATIVE_PATH": "bin/linux-arm64-glibc/aws-crt-nodejs.node",
+            "CLIENT_CONFIG_TABLE_NAME": {
+              "Ref": "ClientConfigTableE705763C",
+            },
+            "ENVIRONMENT": "test",
+            "EVENTBUS_ARN": {
+              "Fn::Join": [
+                "",
+                [
+                  "arn:",
+                  {
+                    "Ref": "AWS::Partition",
+                  },
+                  ":events:",
+                  {
+                    "Ref": "AWS::Region",
+                  },
+                  ":",
+                  {
+                    "Ref": "AWS::AccountId",
+                  },
+                  ":event-bus/bifrost",
+                ],
+              ],
+            },
+            "LOG_LEVEL": "info",
+            "NEW_RELIC_ACCOUNT_ID": "3433923",
+            "NEW_RELIC_EXTENSION_LOG_LEVEL": "INFO",
+            "NEW_RELIC_EXTENSION_SEND_EXTENSION_LOGS": "false",
+            "NEW_RELIC_EXTENSION_SEND_FUNCTION_LOGS": "true",
+            "NEW_RELIC_LAMBDA_HANDLER": "index.handler",
+            "NODE_ENV": "production",
+            "NR_TAGS": {
+              "Fn::Join": [
+                "",
+                [
+                  "service:test-service;region:",
+                  {
+                    "Ref": "AWS::Region",
+                  },
+                  ";environment:test;team:growth",
+                ],
+              ],
+            },
+            "PARAMETERS_SECRETS_EXTENSION_CACHE_ENABLED": "true",
+            "PARAMETERS_SECRETS_EXTENSION_CACHE_SIZE": "1000",
+            "PARAMETERS_SECRETS_EXTENSION_HTTP_PORT": "2773",
+            "PARAMETERS_SECRETS_EXTENSION_LOG_LEVEL": "warn",
+            "PARAMETERS_SECRETS_EXTENSION_MAX_CONNECTIONS": "3",
+            "SECRETS_MANAGER_TIMEOUT_MILLIS": "0",
+            "SECRETS_MANAGER_TTL": "300",
+            "SERVICE_NAME": "test-service",
+            "SSM_PARAMETER_STORE_TIMEOUT_MILLIS": "0",
+            "SSM_PARAMETER_STORE_TTL": "300",
+            "STACK_NAME": "test",
+            "TRACKER_SUBSCRIPTION_TABLE_NAME": {
+              "Ref": "TrackerSubscriptionTable408C8229",
+            },
+            "TRANSFORM_DELIVERY_ATTEMPT_TABLE_NAME": {
+              "Ref": "TransformDeliveryAttemptTable4673E1C9",
+            },
+          },
+        },
+        "Handler": "newrelic-lambda-wrapper.handler",
+        "Layers": [
+          {
+            "Fn::FindInMap": [
+              "ParamsandsecretslayerMap",
+              {
+                "Ref": "AWS::Region",
+              },
+              "1x0x103xarm64",
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:aws:lambda:",
+                {
+                  "Ref": "AWS::Region",
+                },
+                ":451483290750:layer:NewRelicNodeJS20XARM64:96",
+              ],
+            ],
+          },
+        ],
+        "LoggingConfig": {
+          "ApplicationLogLevel": "INFO",
+          "LogFormat": "JSON",
+          "LogGroup": {
+            "Ref": "CrudApiputclientsclientIdfnlogs9F36BD29",
+          },
+        },
+        "MemorySize": 1048,
+        "Role": {
+          "Fn::GetAtt": [
+            "CrudApiputclientsclientIdfnServiceRole61F0EA3E",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs20.x",
+        "Timeout": 30,
+        "TracingConfig": {
+          "Mode": "Active",
+        },
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "CrudApiputclientsclientIdfnServiceRole61F0EA3E": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "CrudApiputclientsclientIdfnServiceRoleDefaultPolicyF5B0398D": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "NewRelicLicenseKeySecret-NewRelic-LicenseKeySecretARN",
+              },
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition",
+                    },
+                    ":secretsmanager:",
+                    {
+                      "Ref": "AWS::Region",
+                    },
+                    ":",
+                    {
+                      "Ref": "AWS::AccountId",
+                    },
+                    ":secret:/shared/statsig-??????",
+                  ],
+                ],
+              },
+            },
+            {
+              "Action": [
+                "dynamodb:BatchGetItem",
+                "dynamodb:Query",
+                "dynamodb:GetItem",
+                "dynamodb:Scan",
+                "dynamodb:ConditionCheckItem",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:DescribeTable",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "ClientConfigTableE705763C",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
+                "dynamodb:GetRecords",
+                "dynamodb:GetShardIterator",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "ClientConfigTableE705763C",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
+                "dynamodb:BatchGetItem",
+                "dynamodb:Query",
+                "dynamodb:GetItem",
+                "dynamodb:Scan",
+                "dynamodb:ConditionCheckItem",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:DescribeTable",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "TrackerSubscriptionTable408C8229",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "TrackerSubscriptionTable408C8229",
+                          "Arn",
+                        ],
+                      },
+                      "/index/*",
+                    ],
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": [
+                "dynamodb:GetRecords",
+                "dynamodb:GetShardIterator",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "TrackerSubscriptionTable408C8229",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "TrackerSubscriptionTable408C8229",
+                          "Arn",
+                        ],
+                      },
+                      "/index/*",
+                    ],
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": [
+                "dynamodb:BatchGetItem",
+                "dynamodb:Query",
+                "dynamodb:GetItem",
+                "dynamodb:Scan",
+                "dynamodb:ConditionCheckItem",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:DescribeTable",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "TransformDeliveryAttemptTable4673E1C9",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
+                "dynamodb:GetRecords",
+                "dynamodb:GetShardIterator",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "TransformDeliveryAttemptTable4673E1C9",
+                  "Arn",
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "CrudApiputclientsclientIdfnServiceRoleDefaultPolicyF5B0398D",
+        "Roles": [
+          {
+            "Ref": "CrudApiputclientsclientIdfnServiceRole61F0EA3E",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "CrudApiputclientsclientIdfnlogs9F36BD29": {
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "LogGroupClass": "INFREQUENT_ACCESS",
+        "RetentionInDays": 30,
+        "Tags": [
+          {
+            "Key": "SkipNewRelic",
+            "Value": "true",
+          },
+        ],
+      },
+      "Type": "AWS::Logs::LogGroup",
+      "UpdateReplacePolicy": "Retain",
+    },
+    "EnrichedPackageEventConsumerConsumerDlqD722D1C4": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "KmsDataKeyReusePeriodSeconds": 3600,
+        "KmsMasterKeyId": {
+          "Fn::GetAtt": [
+            "EnrichedPackageEventConsumerQueueEncryptionKey0A80AC41",
+            "Arn",
+          ],
+        },
+        "MessageRetentionPeriod": 604800,
+        "QueueName": "test-consumer-dlq-EnrichedPackageEventConsumer",
+        "VisibilityTimeout": 120,
+      },
+      "Type": "AWS::SQS::Queue",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "EnrichedPackageEventConsumerConsumerDlqPolicy4B071569": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sqs:*",
+              "Condition": {
+                "Bool": {
+                  "aws:SecureTransport": "false",
+                },
+              },
+              "Effect": "Deny",
+              "Principal": {
+                "AWS": "*",
+              },
+              "Resource": {
+                "Fn::GetAtt": [
+                  "EnrichedPackageEventConsumerConsumerDlqD722D1C4",
+                  "Arn",
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "Queues": [
+          {
+            "Ref": "EnrichedPackageEventConsumerConsumerDlqD722D1C4",
+          },
+        ],
+      },
+      "Type": "AWS::SQS::QueuePolicy",
+    },
+    "EnrichedPackageEventConsumerConsumerQ1417610D": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "KmsDataKeyReusePeriodSeconds": 3600,
+        "KmsMasterKeyId": {
+          "Fn::GetAtt": [
+            "EnrichedPackageEventConsumerQueueEncryptionKey0A80AC41",
+            "Arn",
+          ],
+        },
+        "MessageRetentionPeriod": 604800,
+        "RedrivePolicy": {
+          "deadLetterTargetArn": {
+            "Fn::GetAtt": [
+              "EnrichedPackageEventConsumerConsumerDlqD722D1C4",
+              "Arn",
+            ],
+          },
+          "maxReceiveCount": 5,
+        },
+        "VisibilityTimeout": 120,
+      },
+      "Type": "AWS::SQS::Queue",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "EnrichedPackageEventConsumerConsumerQPolicy41032B07": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sqs:*",
+              "Condition": {
+                "Bool": {
+                  "aws:SecureTransport": "false",
+                },
+              },
+              "Effect": "Deny",
+              "Principal": {
+                "AWS": "*",
+              },
+              "Resource": {
+                "Fn::GetAtt": [
+                  "EnrichedPackageEventConsumerConsumerQ1417610D",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
+                "sqs:SendMessage",
+                "sqs:GetQueueAttributes",
+                "sqs:GetQueueUrl",
+              ],
+              "Condition": {
+                "StringEquals": {
+                  "aws:SourceAccount": {
+                    "Ref": "AWS::AccountId",
+                  },
+                },
+              },
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "events.amazonaws.com",
+              },
+              "Resource": {
+                "Fn::GetAtt": [
+                  "EnrichedPackageEventConsumerConsumerQ1417610D",
+                  "Arn",
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "Queues": [
+          {
+            "Ref": "EnrichedPackageEventConsumerConsumerQ1417610D",
+          },
+        ],
+      },
+      "Type": "AWS::SQS::QueuePolicy",
+    },
+    "EnrichedPackageEventConsumerDAA07233": {
+      "DependsOn": [
+        "EnrichedPackageEventConsumerServiceRoleDefaultPolicyD9B304CF",
+        "EnrichedPackageEventConsumerServiceRoleD4C003E7",
+      ],
+      "Properties": {
+        "Architectures": [
+          "arm64",
+        ],
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "42406290c8ce8ef508f8650710d5e756cfa1fe72729068f2de678ab40d662a0a.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "AWS_CRT_NODEJS_BINARY_RELATIVE_PATH": "bin/linux-arm64-glibc/aws-crt-nodejs.node",
+            "CLIENT_CONFIG_TABLE_NAME": {
+              "Ref": "ClientConfigTableE705763C",
+            },
             "ENVIRONMENT": "test",
             "EVENTBUS_ARN": {
               "Fn::Join": [
@@ -548,6 +3071,12 @@ exports[`Snapshot 1`] = `
             "SSM_PARAMETER_STORE_TIMEOUT_MILLIS": "0",
             "SSM_PARAMETER_STORE_TTL": "300",
             "STACK_NAME": "test",
+            "TRACKER_SUBSCRIPTION_TABLE_NAME": {
+              "Ref": "TrackerSubscriptionTable408C8229",
+            },
+            "TRANSFORM_DELIVERY_ATTEMPT_TABLE_NAME": {
+              "Ref": "TransformDeliveryAttemptTable4673E1C9",
+            },
           },
         },
         "Handler": "newrelic-lambda-wrapper.handler",
@@ -578,13 +3107,13 @@ exports[`Snapshot 1`] = `
           "ApplicationLogLevel": "INFO",
           "LogFormat": "JSON",
           "LogGroup": {
-            "Ref": "LugusSmokelogs6304DE87",
+            "Ref": "EnrichedPackageEventConsumerDefaultlogs3B53F24B",
           },
         },
         "MemorySize": 1048,
         "Role": {
           "Fn::GetAtt": [
-            "LugusSmokeServiceRole81BD16B1",
+            "EnrichedPackageEventConsumerServiceRoleD4C003E7",
             "Arn",
           ],
         },
@@ -596,7 +3125,197 @@ exports[`Snapshot 1`] = `
       },
       "Type": "AWS::Lambda::Function",
     },
-    "LugusSmokeServiceRole81BD16B1": {
+    "EnrichedPackageEventConsumerDefaultlogs3B53F24B": {
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "LogGroupClass": "INFREQUENT_ACCESS",
+        "RetentionInDays": 30,
+        "Tags": [
+          {
+            "Key": "SkipNewRelic",
+            "Value": "true",
+          },
+        ],
+      },
+      "Type": "AWS::Logs::LogGroup",
+      "UpdateReplacePolicy": "Retain",
+    },
+    "EnrichedPackageEventConsumerDlq7CAA9FE6": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "KmsDataKeyReusePeriodSeconds": 3600,
+        "KmsMasterKeyId": {
+          "Fn::GetAtt": [
+            "EnrichedPackageEventConsumerQueueEncryptionKey0A80AC41",
+            "Arn",
+          ],
+        },
+        "MessageRetentionPeriod": 604800,
+        "QueueName": "test-dlq-EnrichedPackageEventConsumer",
+        "VisibilityTimeout": 120,
+      },
+      "Type": "AWS::SQS::Queue",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "EnrichedPackageEventConsumerDlqPolicy5F24B971": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sqs:*",
+              "Condition": {
+                "Bool": {
+                  "aws:SecureTransport": "false",
+                },
+              },
+              "Effect": "Deny",
+              "Principal": {
+                "AWS": "*",
+              },
+              "Resource": {
+                "Fn::GetAtt": [
+                  "EnrichedPackageEventConsumerDlq7CAA9FE6",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": "sqs:SendMessage",
+              "Condition": {
+                "StringEquals": {
+                  "aws:SourceAccount": {
+                    "Ref": "AWS::AccountId",
+                  },
+                },
+              },
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "events.amazonaws.com",
+              },
+              "Resource": {
+                "Fn::GetAtt": [
+                  "EnrichedPackageEventConsumerDlq7CAA9FE6",
+                  "Arn",
+                ],
+              },
+              "Sid": "AllowEventRuletestEnrichedPackageEventConsumerEventRule319E4B32",
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "Queues": [
+          {
+            "Ref": "EnrichedPackageEventConsumerDlq7CAA9FE6",
+          },
+        ],
+      },
+      "Type": "AWS::SQS::QueuePolicy",
+    },
+    "EnrichedPackageEventConsumerEventRuleBE55CCFE": {
+      "DependsOn": [
+        "EnrichedPackageEventConsumerConsumerQPolicy41032B07",
+        "EnrichedPackageEventConsumerDlqPolicy5F24B971",
+      ],
+      "Properties": {
+        "Description": "Processes enriched package events from hydratr — transforms and delivers to Shopify",
+        "EventBusName": "hydratrEventBus",
+        "EventPattern": {
+          "detail-type": [
+            "EnrichedPackageEvent",
+          ],
+        },
+        "State": "ENABLED",
+        "Targets": [
+          {
+            "Arn": {
+              "Fn::GetAtt": [
+                "EnrichedPackageEventConsumerConsumerQ1417610D",
+                "Arn",
+              ],
+            },
+            "DeadLetterConfig": {
+              "Arn": {
+                "Fn::GetAtt": [
+                  "EnrichedPackageEventConsumerDlq7CAA9FE6",
+                  "Arn",
+                ],
+              },
+            },
+            "Id": "Target0",
+            "RetryPolicy": {
+              "MaximumEventAgeInSeconds": 21600,
+              "MaximumRetryAttempts": 90,
+            },
+          },
+        ],
+      },
+      "Type": "AWS::Events::Rule",
+    },
+    "EnrichedPackageEventConsumerQueueEncryptionKey0A80AC41": {
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "Description": "test SQS Encryption Key",
+        "EnableKeyRotation": true,
+        "Enabled": true,
+        "KeyPolicy": {
+          "Statement": [
+            {
+              "Action": "kms:*",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition",
+                      },
+                      ":iam::",
+                      {
+                        "Ref": "AWS::AccountId",
+                      },
+                      ":root",
+                    ],
+                  ],
+                },
+              },
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "kms:Decrypt",
+                "kms:Encrypt",
+                "kms:ReEncrypt*",
+                "kms:GenerateDataKey*",
+              ],
+              "Condition": {
+                "StringEquals": {
+                  "aws:SourceAccount": {
+                    "Ref": "AWS::AccountId",
+                  },
+                },
+              },
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "events.amazonaws.com",
+              },
+              "Resource": "*",
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "Tags": [
+          {
+            "Key": "KeyUsage",
+            "Value": "SQS",
+          },
+        ],
+      },
+      "Type": "AWS::KMS::Key",
+      "UpdateReplacePolicy": "Retain",
+    },
+    "EnrichedPackageEventConsumerServiceRoleD4C003E7": {
       "Properties": {
         "AssumeRolePolicyDocument": {
           "Statement": [
@@ -643,7 +3362,7 @@ exports[`Snapshot 1`] = `
       },
       "Type": "AWS::IAM::Role",
     },
-    "LugusSmokeServiceRoleDefaultPolicyA4DE00C1": {
+    "EnrichedPackageEventConsumerServiceRoleDefaultPolicyD9B304CF": {
       "Properties": {
         "PolicyDocument": {
           "Statement": [
@@ -654,6 +3373,32 @@ exports[`Snapshot 1`] = `
               ],
               "Effect": "Allow",
               "Resource": "*",
+            },
+            {
+              "Action": [
+                "sqs:ReceiveMessage",
+                "sqs:ChangeMessageVisibility",
+                "sqs:GetQueueUrl",
+                "sqs:DeleteMessage",
+                "sqs:GetQueueAttributes",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "EnrichedPackageEventConsumerConsumerQ1417610D",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": "kms:Decrypt",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "EnrichedPackageEventConsumerQueueEncryptionKey0A80AC41",
+                  "Arn",
+                ],
+              },
             },
             {
               "Action": [
@@ -692,19 +3437,450 @@ exports[`Snapshot 1`] = `
                 ],
               },
             },
+            {
+              "Action": [
+                "dynamodb:BatchGetItem",
+                "dynamodb:Query",
+                "dynamodb:GetItem",
+                "dynamodb:Scan",
+                "dynamodb:ConditionCheckItem",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:DescribeTable",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "ClientConfigTableE705763C",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
+                "dynamodb:GetRecords",
+                "dynamodb:GetShardIterator",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "ClientConfigTableE705763C",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
+                "dynamodb:BatchGetItem",
+                "dynamodb:Query",
+                "dynamodb:GetItem",
+                "dynamodb:Scan",
+                "dynamodb:ConditionCheckItem",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:DescribeTable",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "TrackerSubscriptionTable408C8229",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "TrackerSubscriptionTable408C8229",
+                          "Arn",
+                        ],
+                      },
+                      "/index/*",
+                    ],
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": [
+                "dynamodb:GetRecords",
+                "dynamodb:GetShardIterator",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "TrackerSubscriptionTable408C8229",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "TrackerSubscriptionTable408C8229",
+                          "Arn",
+                        ],
+                      },
+                      "/index/*",
+                    ],
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": [
+                "dynamodb:BatchGetItem",
+                "dynamodb:Query",
+                "dynamodb:GetItem",
+                "dynamodb:Scan",
+                "dynamodb:ConditionCheckItem",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:DescribeTable",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "TransformDeliveryAttemptTable4673E1C9",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
+                "dynamodb:GetRecords",
+                "dynamodb:GetShardIterator",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "TransformDeliveryAttemptTable4673E1C9",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
+                "sqs:ChangeMessageVisibilityBatch",
+                "sqs:DeleteMessageBatch",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "EnrichedPackageEventConsumerConsumerQ1417610D",
+                  "Arn",
+                ],
+              },
+            },
           ],
           "Version": "2012-10-17",
         },
-        "PolicyName": "LugusSmokeServiceRoleDefaultPolicyA4DE00C1",
+        "PolicyName": "EnrichedPackageEventConsumerServiceRoleDefaultPolicyD9B304CF",
         "Roles": [
           {
-            "Ref": "LugusSmokeServiceRole81BD16B1",
+            "Ref": "EnrichedPackageEventConsumerServiceRoleD4C003E7",
           },
         ],
       },
       "Type": "AWS::IAM::Policy",
     },
-    "LugusSmokelogs6304DE87": {
+    "EnrichedPackageEventConsumerSqsEventSourcetestEnrichedPackageEventConsumerConsumerQCC3628AB7B0ECD98": {
+      "Properties": {
+        "EventSourceArn": {
+          "Fn::GetAtt": [
+            "EnrichedPackageEventConsumerConsumerQ1417610D",
+            "Arn",
+          ],
+        },
+        "FunctionName": {
+          "Ref": "EnrichedPackageEventConsumerDAA07233",
+        },
+        "FunctionResponseTypes": [
+          "ReportBatchItemFailures",
+        ],
+        "MetricsConfig": {
+          "Metrics": [
+            "EventCount",
+          ],
+        },
+        "ScalingConfig": {
+          "MaximumConcurrency": 100,
+        },
+      },
+      "Type": "AWS::Lambda::EventSourceMapping",
+    },
+    "TrackerStatusRequestedConsumerConsumerDlq8F0A4E2E": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "KmsDataKeyReusePeriodSeconds": 3600,
+        "KmsMasterKeyId": {
+          "Fn::GetAtt": [
+            "TrackerStatusRequestedConsumerQueueEncryptionKey6090FD0A",
+            "Arn",
+          ],
+        },
+        "MessageRetentionPeriod": 604800,
+        "QueueName": "test-consumer-dlq-TrackerStatusRequestedConsumer",
+        "VisibilityTimeout": 120,
+      },
+      "Type": "AWS::SQS::Queue",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "TrackerStatusRequestedConsumerConsumerDlqPolicy203072F0": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sqs:*",
+              "Condition": {
+                "Bool": {
+                  "aws:SecureTransport": "false",
+                },
+              },
+              "Effect": "Deny",
+              "Principal": {
+                "AWS": "*",
+              },
+              "Resource": {
+                "Fn::GetAtt": [
+                  "TrackerStatusRequestedConsumerConsumerDlq8F0A4E2E",
+                  "Arn",
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "Queues": [
+          {
+            "Ref": "TrackerStatusRequestedConsumerConsumerDlq8F0A4E2E",
+          },
+        ],
+      },
+      "Type": "AWS::SQS::QueuePolicy",
+    },
+    "TrackerStatusRequestedConsumerConsumerQ8ECDE3E5": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "KmsDataKeyReusePeriodSeconds": 3600,
+        "KmsMasterKeyId": {
+          "Fn::GetAtt": [
+            "TrackerStatusRequestedConsumerQueueEncryptionKey6090FD0A",
+            "Arn",
+          ],
+        },
+        "MessageRetentionPeriod": 604800,
+        "RedrivePolicy": {
+          "deadLetterTargetArn": {
+            "Fn::GetAtt": [
+              "TrackerStatusRequestedConsumerConsumerDlq8F0A4E2E",
+              "Arn",
+            ],
+          },
+          "maxReceiveCount": 5,
+        },
+        "VisibilityTimeout": 120,
+      },
+      "Type": "AWS::SQS::Queue",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "TrackerStatusRequestedConsumerConsumerQPolicyAA7B21F8": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sqs:*",
+              "Condition": {
+                "Bool": {
+                  "aws:SecureTransport": "false",
+                },
+              },
+              "Effect": "Deny",
+              "Principal": {
+                "AWS": "*",
+              },
+              "Resource": {
+                "Fn::GetAtt": [
+                  "TrackerStatusRequestedConsumerConsumerQ8ECDE3E5",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
+                "sqs:SendMessage",
+                "sqs:GetQueueAttributes",
+                "sqs:GetQueueUrl",
+              ],
+              "Condition": {
+                "StringEquals": {
+                  "aws:SourceAccount": {
+                    "Ref": "AWS::AccountId",
+                  },
+                },
+              },
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "events.amazonaws.com",
+              },
+              "Resource": {
+                "Fn::GetAtt": [
+                  "TrackerStatusRequestedConsumerConsumerQ8ECDE3E5",
+                  "Arn",
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "Queues": [
+          {
+            "Ref": "TrackerStatusRequestedConsumerConsumerQ8ECDE3E5",
+          },
+        ],
+      },
+      "Type": "AWS::SQS::QueuePolicy",
+    },
+    "TrackerStatusRequestedConsumerDF4F6FEA": {
+      "DependsOn": [
+        "TrackerStatusRequestedConsumerServiceRoleDefaultPolicy5D5E6156",
+        "TrackerStatusRequestedConsumerServiceRole19F740F7",
+      ],
+      "Properties": {
+        "Architectures": [
+          "arm64",
+        ],
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "a66eed38af62923231c56f0af2f4227ec99d6315626bc07dce834db379b17387.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "AWS_CRT_NODEJS_BINARY_RELATIVE_PATH": "bin/linux-arm64-glibc/aws-crt-nodejs.node",
+            "CLIENT_CONFIG_TABLE_NAME": {
+              "Ref": "ClientConfigTableE705763C",
+            },
+            "ENVIRONMENT": "test",
+            "EVENTBUS_ARN": {
+              "Fn::Join": [
+                "",
+                [
+                  "arn:",
+                  {
+                    "Ref": "AWS::Partition",
+                  },
+                  ":events:",
+                  {
+                    "Ref": "AWS::Region",
+                  },
+                  ":",
+                  {
+                    "Ref": "AWS::AccountId",
+                  },
+                  ":event-bus/bifrost",
+                ],
+              ],
+            },
+            "LOG_LEVEL": "info",
+            "MERGED_API_URL": "https://graph.dev.shipveho.com/graphql",
+            "NEW_RELIC_ACCOUNT_ID": "3433923",
+            "NEW_RELIC_EXTENSION_LOG_LEVEL": "INFO",
+            "NEW_RELIC_EXTENSION_SEND_EXTENSION_LOGS": "false",
+            "NEW_RELIC_EXTENSION_SEND_FUNCTION_LOGS": "true",
+            "NEW_RELIC_LAMBDA_HANDLER": "index.handler",
+            "NODE_ENV": "production",
+            "NR_TAGS": {
+              "Fn::Join": [
+                "",
+                [
+                  "service:test-service;region:",
+                  {
+                    "Ref": "AWS::Region",
+                  },
+                  ";environment:test;team:growth",
+                ],
+              ],
+            },
+            "PARAMETERS_SECRETS_EXTENSION_CACHE_ENABLED": "true",
+            "PARAMETERS_SECRETS_EXTENSION_CACHE_SIZE": "1000",
+            "PARAMETERS_SECRETS_EXTENSION_HTTP_PORT": "2773",
+            "PARAMETERS_SECRETS_EXTENSION_LOG_LEVEL": "warn",
+            "PARAMETERS_SECRETS_EXTENSION_MAX_CONNECTIONS": "3",
+            "SECRETS_MANAGER_TIMEOUT_MILLIS": "0",
+            "SECRETS_MANAGER_TTL": "300",
+            "SERVICE_NAME": "test-service",
+            "SSM_PARAMETER_STORE_TIMEOUT_MILLIS": "0",
+            "SSM_PARAMETER_STORE_TTL": "300",
+            "STACK_NAME": "test",
+            "TRACKER_SUBSCRIPTION_TABLE_NAME": {
+              "Ref": "TrackerSubscriptionTable408C8229",
+            },
+            "TRANSFORM_DELIVERY_ATTEMPT_TABLE_NAME": {
+              "Ref": "TransformDeliveryAttemptTable4673E1C9",
+            },
+          },
+        },
+        "Handler": "newrelic-lambda-wrapper.handler",
+        "Layers": [
+          {
+            "Fn::FindInMap": [
+              "ParamsandsecretslayerMap",
+              {
+                "Ref": "AWS::Region",
+              },
+              "1x0x103xarm64",
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:aws:lambda:",
+                {
+                  "Ref": "AWS::Region",
+                },
+                ":451483290750:layer:NewRelicNodeJS20XARM64:96",
+              ],
+            ],
+          },
+        ],
+        "LoggingConfig": {
+          "ApplicationLogLevel": "INFO",
+          "LogFormat": "JSON",
+          "LogGroup": {
+            "Ref": "TrackerStatusRequestedConsumerDefaultlogs6811D83D",
+          },
+        },
+        "MemorySize": 1048,
+        "Role": {
+          "Fn::GetAtt": [
+            "TrackerStatusRequestedConsumerServiceRole19F740F7",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs20.x",
+        "Timeout": 30,
+        "TracingConfig": {
+          "Mode": "Active",
+        },
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "TrackerStatusRequestedConsumerDefaultlogs6811D83D": {
       "DeletionPolicy": "Retain",
       "Properties": {
         "LogGroupClass": "INFREQUENT_ACCESS",
@@ -718,6 +3894,1256 @@ exports[`Snapshot 1`] = `
       },
       "Type": "AWS::Logs::LogGroup",
       "UpdateReplacePolicy": "Retain",
+    },
+    "TrackerStatusRequestedConsumerDlqD0D00C54": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "KmsDataKeyReusePeriodSeconds": 3600,
+        "KmsMasterKeyId": {
+          "Fn::GetAtt": [
+            "TrackerStatusRequestedConsumerQueueEncryptionKey6090FD0A",
+            "Arn",
+          ],
+        },
+        "MessageRetentionPeriod": 604800,
+        "QueueName": "test-dlq-TrackerStatusRequestedConsumer",
+        "VisibilityTimeout": 120,
+      },
+      "Type": "AWS::SQS::Queue",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "TrackerStatusRequestedConsumerDlqPolicy7B4AAD08": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sqs:*",
+              "Condition": {
+                "Bool": {
+                  "aws:SecureTransport": "false",
+                },
+              },
+              "Effect": "Deny",
+              "Principal": {
+                "AWS": "*",
+              },
+              "Resource": {
+                "Fn::GetAtt": [
+                  "TrackerStatusRequestedConsumerDlqD0D00C54",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": "sqs:SendMessage",
+              "Condition": {
+                "StringEquals": {
+                  "aws:SourceAccount": {
+                    "Ref": "AWS::AccountId",
+                  },
+                },
+              },
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "events.amazonaws.com",
+              },
+              "Resource": {
+                "Fn::GetAtt": [
+                  "TrackerStatusRequestedConsumerDlqD0D00C54",
+                  "Arn",
+                ],
+              },
+              "Sid": "AllowEventRuletestTrackerStatusRequestedConsumerEventRule2677E68E",
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "Queues": [
+          {
+            "Ref": "TrackerStatusRequestedConsumerDlqD0D00C54",
+          },
+        ],
+      },
+      "Type": "AWS::SQS::QueuePolicy",
+    },
+    "TrackerStatusRequestedConsumerEventRuleB0EC7871": {
+      "DependsOn": [
+        "TrackerStatusRequestedConsumerConsumerQPolicyAA7B21F8",
+        "TrackerStatusRequestedConsumerDlqPolicy7B4AAD08",
+      ],
+      "Properties": {
+        "Description": "Processes status requests — fetches fresh data from Lugus and sends Shopify update",
+        "EventBusName": {
+          "Fn::ImportValue": "BifrostEventBusName",
+        },
+        "EventPattern": {
+          "account": [
+            {
+              "Ref": "AWS::AccountId",
+            },
+          ],
+          "detail-type": [
+            "TrackingStatusRequested",
+          ],
+        },
+        "State": "ENABLED",
+        "Targets": [
+          {
+            "Arn": {
+              "Fn::GetAtt": [
+                "TrackerStatusRequestedConsumerConsumerQ8ECDE3E5",
+                "Arn",
+              ],
+            },
+            "DeadLetterConfig": {
+              "Arn": {
+                "Fn::GetAtt": [
+                  "TrackerStatusRequestedConsumerDlqD0D00C54",
+                  "Arn",
+                ],
+              },
+            },
+            "Id": "Target0",
+            "RetryPolicy": {
+              "MaximumEventAgeInSeconds": 21600,
+              "MaximumRetryAttempts": 90,
+            },
+          },
+        ],
+      },
+      "Type": "AWS::Events::Rule",
+    },
+    "TrackerStatusRequestedConsumerQueueEncryptionKey6090FD0A": {
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "Description": "test SQS Encryption Key",
+        "EnableKeyRotation": true,
+        "Enabled": true,
+        "KeyPolicy": {
+          "Statement": [
+            {
+              "Action": "kms:*",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition",
+                      },
+                      ":iam::",
+                      {
+                        "Ref": "AWS::AccountId",
+                      },
+                      ":root",
+                    ],
+                  ],
+                },
+              },
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "kms:Decrypt",
+                "kms:Encrypt",
+                "kms:ReEncrypt*",
+                "kms:GenerateDataKey*",
+              ],
+              "Condition": {
+                "StringEquals": {
+                  "aws:SourceAccount": {
+                    "Ref": "AWS::AccountId",
+                  },
+                },
+              },
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "events.amazonaws.com",
+              },
+              "Resource": "*",
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "Tags": [
+          {
+            "Key": "KeyUsage",
+            "Value": "SQS",
+          },
+        ],
+      },
+      "Type": "AWS::KMS::Key",
+      "UpdateReplacePolicy": "Retain",
+    },
+    "TrackerStatusRequestedConsumerServiceRole19F740F7": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::",
+                {
+                  "Ref": "AWS::AccountId",
+                },
+                ":policy/merged-api-ReadApiPolicy",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "TrackerStatusRequestedConsumerServiceRoleDefaultPolicy5D5E6156": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "sqs:ReceiveMessage",
+                "sqs:ChangeMessageVisibility",
+                "sqs:GetQueueUrl",
+                "sqs:DeleteMessage",
+                "sqs:GetQueueAttributes",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "TrackerStatusRequestedConsumerConsumerQ8ECDE3E5",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": "kms:Decrypt",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "TrackerStatusRequestedConsumerQueueEncryptionKey6090FD0A",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "NewRelicLicenseKeySecret-NewRelic-LicenseKeySecretARN",
+              },
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition",
+                    },
+                    ":secretsmanager:",
+                    {
+                      "Ref": "AWS::Region",
+                    },
+                    ":",
+                    {
+                      "Ref": "AWS::AccountId",
+                    },
+                    ":secret:/shared/statsig-??????",
+                  ],
+                ],
+              },
+            },
+            {
+              "Action": [
+                "dynamodb:BatchGetItem",
+                "dynamodb:Query",
+                "dynamodb:GetItem",
+                "dynamodb:Scan",
+                "dynamodb:ConditionCheckItem",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:DescribeTable",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "ClientConfigTableE705763C",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
+                "dynamodb:GetRecords",
+                "dynamodb:GetShardIterator",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "ClientConfigTableE705763C",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
+                "dynamodb:BatchGetItem",
+                "dynamodb:Query",
+                "dynamodb:GetItem",
+                "dynamodb:Scan",
+                "dynamodb:ConditionCheckItem",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:DescribeTable",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "TrackerSubscriptionTable408C8229",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "TrackerSubscriptionTable408C8229",
+                          "Arn",
+                        ],
+                      },
+                      "/index/*",
+                    ],
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": [
+                "dynamodb:GetRecords",
+                "dynamodb:GetShardIterator",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "TrackerSubscriptionTable408C8229",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "TrackerSubscriptionTable408C8229",
+                          "Arn",
+                        ],
+                      },
+                      "/index/*",
+                    ],
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": [
+                "dynamodb:BatchGetItem",
+                "dynamodb:Query",
+                "dynamodb:GetItem",
+                "dynamodb:Scan",
+                "dynamodb:ConditionCheckItem",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:DescribeTable",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "TransformDeliveryAttemptTable4673E1C9",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
+                "dynamodb:GetRecords",
+                "dynamodb:GetShardIterator",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "TransformDeliveryAttemptTable4673E1C9",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
+                "sqs:ChangeMessageVisibilityBatch",
+                "sqs:DeleteMessageBatch",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "TrackerStatusRequestedConsumerConsumerQ8ECDE3E5",
+                  "Arn",
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "TrackerStatusRequestedConsumerServiceRoleDefaultPolicy5D5E6156",
+        "Roles": [
+          {
+            "Ref": "TrackerStatusRequestedConsumerServiceRole19F740F7",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "TrackerStatusRequestedConsumerSqsEventSourcetestTrackerStatusRequestedConsumerConsumerQ6CDCD687329CF171": {
+      "Properties": {
+        "EventSourceArn": {
+          "Fn::GetAtt": [
+            "TrackerStatusRequestedConsumerConsumerQ8ECDE3E5",
+            "Arn",
+          ],
+        },
+        "FunctionName": {
+          "Ref": "TrackerStatusRequestedConsumerDF4F6FEA",
+        },
+        "FunctionResponseTypes": [
+          "ReportBatchItemFailures",
+        ],
+        "MetricsConfig": {
+          "Metrics": [
+            "EventCount",
+          ],
+        },
+        "ScalingConfig": {
+          "MaximumConcurrency": 100,
+        },
+      },
+      "Type": "AWS::Lambda::EventSourceMapping",
+    },
+    "TrackerSubscribedConsumer6124300C": {
+      "DependsOn": [
+        "TrackerSubscribedConsumerServiceRoleDefaultPolicyB604E0CB",
+        "TrackerSubscribedConsumerServiceRoleB3B9BA53",
+      ],
+      "Properties": {
+        "Architectures": [
+          "arm64",
+        ],
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "df333029d811d28b1989b96bebba87fc346c751a2712d2e19f31ffea9c7bd8d4.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "AWS_CRT_NODEJS_BINARY_RELATIVE_PATH": "bin/linux-arm64-glibc/aws-crt-nodejs.node",
+            "CLIENT_CONFIG_TABLE_NAME": {
+              "Ref": "ClientConfigTableE705763C",
+            },
+            "ENVIRONMENT": "test",
+            "EVENTBUS_ARN": {
+              "Fn::Join": [
+                "",
+                [
+                  "arn:",
+                  {
+                    "Ref": "AWS::Partition",
+                  },
+                  ":events:",
+                  {
+                    "Ref": "AWS::Region",
+                  },
+                  ":",
+                  {
+                    "Ref": "AWS::AccountId",
+                  },
+                  ":event-bus/bifrost",
+                ],
+              ],
+            },
+            "LOG_LEVEL": "info",
+            "MERGED_API_URL": "https://graph.dev.shipveho.com/graphql",
+            "NEW_RELIC_ACCOUNT_ID": "3433923",
+            "NEW_RELIC_EXTENSION_LOG_LEVEL": "INFO",
+            "NEW_RELIC_EXTENSION_SEND_EXTENSION_LOGS": "false",
+            "NEW_RELIC_EXTENSION_SEND_FUNCTION_LOGS": "true",
+            "NEW_RELIC_LAMBDA_HANDLER": "index.handler",
+            "NODE_ENV": "production",
+            "NR_TAGS": {
+              "Fn::Join": [
+                "",
+                [
+                  "service:test-service;region:",
+                  {
+                    "Ref": "AWS::Region",
+                  },
+                  ";environment:test;team:growth",
+                ],
+              ],
+            },
+            "PARAMETERS_SECRETS_EXTENSION_CACHE_ENABLED": "true",
+            "PARAMETERS_SECRETS_EXTENSION_CACHE_SIZE": "1000",
+            "PARAMETERS_SECRETS_EXTENSION_HTTP_PORT": "2773",
+            "PARAMETERS_SECRETS_EXTENSION_LOG_LEVEL": "warn",
+            "PARAMETERS_SECRETS_EXTENSION_MAX_CONNECTIONS": "3",
+            "SECRETS_MANAGER_TIMEOUT_MILLIS": "0",
+            "SECRETS_MANAGER_TTL": "300",
+            "SERVICE_NAME": "test-service",
+            "SSM_PARAMETER_STORE_TIMEOUT_MILLIS": "0",
+            "SSM_PARAMETER_STORE_TTL": "300",
+            "STACK_NAME": "test",
+            "TRACKER_SUBSCRIPTION_TABLE_NAME": {
+              "Ref": "TrackerSubscriptionTable408C8229",
+            },
+            "TRANSFORM_DELIVERY_ATTEMPT_TABLE_NAME": {
+              "Ref": "TransformDeliveryAttemptTable4673E1C9",
+            },
+          },
+        },
+        "Handler": "newrelic-lambda-wrapper.handler",
+        "Layers": [
+          {
+            "Fn::FindInMap": [
+              "ParamsandsecretslayerMap",
+              {
+                "Ref": "AWS::Region",
+              },
+              "1x0x103xarm64",
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:aws:lambda:",
+                {
+                  "Ref": "AWS::Region",
+                },
+                ":451483290750:layer:NewRelicNodeJS20XARM64:96",
+              ],
+            ],
+          },
+        ],
+        "LoggingConfig": {
+          "ApplicationLogLevel": "INFO",
+          "LogFormat": "JSON",
+          "LogGroup": {
+            "Ref": "TrackerSubscribedConsumerDefaultlogs758BC0A7",
+          },
+        },
+        "MemorySize": 1048,
+        "Role": {
+          "Fn::GetAtt": [
+            "TrackerSubscribedConsumerServiceRoleB3B9BA53",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs20.x",
+        "Timeout": 30,
+        "TracingConfig": {
+          "Mode": "Active",
+        },
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "TrackerSubscribedConsumerConsumerDlq943439D7": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "KmsDataKeyReusePeriodSeconds": 3600,
+        "KmsMasterKeyId": {
+          "Fn::GetAtt": [
+            "TrackerSubscribedConsumerQueueEncryptionKey17739E34",
+            "Arn",
+          ],
+        },
+        "MessageRetentionPeriod": 604800,
+        "QueueName": "test-consumer-dlq-TrackerSubscribedConsumer",
+        "VisibilityTimeout": 120,
+      },
+      "Type": "AWS::SQS::Queue",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "TrackerSubscribedConsumerConsumerDlqPolicyF5768B1E": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sqs:*",
+              "Condition": {
+                "Bool": {
+                  "aws:SecureTransport": "false",
+                },
+              },
+              "Effect": "Deny",
+              "Principal": {
+                "AWS": "*",
+              },
+              "Resource": {
+                "Fn::GetAtt": [
+                  "TrackerSubscribedConsumerConsumerDlq943439D7",
+                  "Arn",
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "Queues": [
+          {
+            "Ref": "TrackerSubscribedConsumerConsumerDlq943439D7",
+          },
+        ],
+      },
+      "Type": "AWS::SQS::QueuePolicy",
+    },
+    "TrackerSubscribedConsumerConsumerQ918EA9D9": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "KmsDataKeyReusePeriodSeconds": 3600,
+        "KmsMasterKeyId": {
+          "Fn::GetAtt": [
+            "TrackerSubscribedConsumerQueueEncryptionKey17739E34",
+            "Arn",
+          ],
+        },
+        "MessageRetentionPeriod": 604800,
+        "RedrivePolicy": {
+          "deadLetterTargetArn": {
+            "Fn::GetAtt": [
+              "TrackerSubscribedConsumerConsumerDlq943439D7",
+              "Arn",
+            ],
+          },
+          "maxReceiveCount": 5,
+        },
+        "VisibilityTimeout": 120,
+      },
+      "Type": "AWS::SQS::Queue",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "TrackerSubscribedConsumerConsumerQPolicy4750603E": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sqs:*",
+              "Condition": {
+                "Bool": {
+                  "aws:SecureTransport": "false",
+                },
+              },
+              "Effect": "Deny",
+              "Principal": {
+                "AWS": "*",
+              },
+              "Resource": {
+                "Fn::GetAtt": [
+                  "TrackerSubscribedConsumerConsumerQ918EA9D9",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
+                "sqs:SendMessage",
+                "sqs:GetQueueAttributes",
+                "sqs:GetQueueUrl",
+              ],
+              "Condition": {
+                "StringEquals": {
+                  "aws:SourceAccount": {
+                    "Ref": "AWS::AccountId",
+                  },
+                },
+              },
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "events.amazonaws.com",
+              },
+              "Resource": {
+                "Fn::GetAtt": [
+                  "TrackerSubscribedConsumerConsumerQ918EA9D9",
+                  "Arn",
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "Queues": [
+          {
+            "Ref": "TrackerSubscribedConsumerConsumerQ918EA9D9",
+          },
+        ],
+      },
+      "Type": "AWS::SQS::QueuePolicy",
+    },
+    "TrackerSubscribedConsumerDefaultlogs758BC0A7": {
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "LogGroupClass": "INFREQUENT_ACCESS",
+        "RetentionInDays": 30,
+        "Tags": [
+          {
+            "Key": "SkipNewRelic",
+            "Value": "true",
+          },
+        ],
+      },
+      "Type": "AWS::Logs::LogGroup",
+      "UpdateReplacePolicy": "Retain",
+    },
+    "TrackerSubscribedConsumerDlq7205F8DD": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "KmsDataKeyReusePeriodSeconds": 3600,
+        "KmsMasterKeyId": {
+          "Fn::GetAtt": [
+            "TrackerSubscribedConsumerQueueEncryptionKey17739E34",
+            "Arn",
+          ],
+        },
+        "MessageRetentionPeriod": 604800,
+        "QueueName": "test-dlq-TrackerSubscribedConsumer",
+        "VisibilityTimeout": 120,
+      },
+      "Type": "AWS::SQS::Queue",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "TrackerSubscribedConsumerDlqPolicyCA15C6FF": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sqs:*",
+              "Condition": {
+                "Bool": {
+                  "aws:SecureTransport": "false",
+                },
+              },
+              "Effect": "Deny",
+              "Principal": {
+                "AWS": "*",
+              },
+              "Resource": {
+                "Fn::GetAtt": [
+                  "TrackerSubscribedConsumerDlq7205F8DD",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": "sqs:SendMessage",
+              "Condition": {
+                "StringEquals": {
+                  "aws:SourceAccount": {
+                    "Ref": "AWS::AccountId",
+                  },
+                },
+              },
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "events.amazonaws.com",
+              },
+              "Resource": {
+                "Fn::GetAtt": [
+                  "TrackerSubscribedConsumerDlq7205F8DD",
+                  "Arn",
+                ],
+              },
+              "Sid": "AllowEventRuletestTrackerSubscribedConsumerEventRule748374F2",
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "Queues": [
+          {
+            "Ref": "TrackerSubscribedConsumerDlq7205F8DD",
+          },
+        ],
+      },
+      "Type": "AWS::SQS::QueuePolicy",
+    },
+    "TrackerSubscribedConsumerEventRule5B4F96CF": {
+      "DependsOn": [
+        "TrackerSubscribedConsumerConsumerQPolicy4750603E",
+        "TrackerSubscribedConsumerDlqPolicyCA15C6FF",
+      ],
+      "Properties": {
+        "Description": "Processes new tracker subscriptions — creates subscription record and sends initial Shopify update",
+        "EventBusName": {
+          "Fn::ImportValue": "BifrostEventBusName",
+        },
+        "EventPattern": {
+          "account": [
+            {
+              "Ref": "AWS::AccountId",
+            },
+          ],
+          "detail-type": [
+            "TrackingSubscriptionCreated",
+          ],
+        },
+        "State": "ENABLED",
+        "Targets": [
+          {
+            "Arn": {
+              "Fn::GetAtt": [
+                "TrackerSubscribedConsumerConsumerQ918EA9D9",
+                "Arn",
+              ],
+            },
+            "DeadLetterConfig": {
+              "Arn": {
+                "Fn::GetAtt": [
+                  "TrackerSubscribedConsumerDlq7205F8DD",
+                  "Arn",
+                ],
+              },
+            },
+            "Id": "Target0",
+            "RetryPolicy": {
+              "MaximumEventAgeInSeconds": 21600,
+              "MaximumRetryAttempts": 90,
+            },
+          },
+        ],
+      },
+      "Type": "AWS::Events::Rule",
+    },
+    "TrackerSubscribedConsumerQueueEncryptionKey17739E34": {
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "Description": "test SQS Encryption Key",
+        "EnableKeyRotation": true,
+        "Enabled": true,
+        "KeyPolicy": {
+          "Statement": [
+            {
+              "Action": "kms:*",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition",
+                      },
+                      ":iam::",
+                      {
+                        "Ref": "AWS::AccountId",
+                      },
+                      ":root",
+                    ],
+                  ],
+                },
+              },
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "kms:Decrypt",
+                "kms:Encrypt",
+                "kms:ReEncrypt*",
+                "kms:GenerateDataKey*",
+              ],
+              "Condition": {
+                "StringEquals": {
+                  "aws:SourceAccount": {
+                    "Ref": "AWS::AccountId",
+                  },
+                },
+              },
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "events.amazonaws.com",
+              },
+              "Resource": "*",
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "Tags": [
+          {
+            "Key": "KeyUsage",
+            "Value": "SQS",
+          },
+        ],
+      },
+      "Type": "AWS::KMS::Key",
+      "UpdateReplacePolicy": "Retain",
+    },
+    "TrackerSubscribedConsumerServiceRoleB3B9BA53": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::",
+                {
+                  "Ref": "AWS::AccountId",
+                },
+                ":policy/merged-api-ReadApiPolicy",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "TrackerSubscribedConsumerServiceRoleDefaultPolicyB604E0CB": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "sqs:ReceiveMessage",
+                "sqs:ChangeMessageVisibility",
+                "sqs:GetQueueUrl",
+                "sqs:DeleteMessage",
+                "sqs:GetQueueAttributes",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "TrackerSubscribedConsumerConsumerQ918EA9D9",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": "kms:Decrypt",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "TrackerSubscribedConsumerQueueEncryptionKey17739E34",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "NewRelicLicenseKeySecret-NewRelic-LicenseKeySecretARN",
+              },
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition",
+                    },
+                    ":secretsmanager:",
+                    {
+                      "Ref": "AWS::Region",
+                    },
+                    ":",
+                    {
+                      "Ref": "AWS::AccountId",
+                    },
+                    ":secret:/shared/statsig-??????",
+                  ],
+                ],
+              },
+            },
+            {
+              "Action": [
+                "dynamodb:BatchGetItem",
+                "dynamodb:Query",
+                "dynamodb:GetItem",
+                "dynamodb:Scan",
+                "dynamodb:ConditionCheckItem",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:DescribeTable",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "ClientConfigTableE705763C",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
+                "dynamodb:GetRecords",
+                "dynamodb:GetShardIterator",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "ClientConfigTableE705763C",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
+                "dynamodb:BatchGetItem",
+                "dynamodb:Query",
+                "dynamodb:GetItem",
+                "dynamodb:Scan",
+                "dynamodb:ConditionCheckItem",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:DescribeTable",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "TrackerSubscriptionTable408C8229",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "TrackerSubscriptionTable408C8229",
+                          "Arn",
+                        ],
+                      },
+                      "/index/*",
+                    ],
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": [
+                "dynamodb:GetRecords",
+                "dynamodb:GetShardIterator",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "TrackerSubscriptionTable408C8229",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "TrackerSubscriptionTable408C8229",
+                          "Arn",
+                        ],
+                      },
+                      "/index/*",
+                    ],
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": [
+                "dynamodb:BatchGetItem",
+                "dynamodb:Query",
+                "dynamodb:GetItem",
+                "dynamodb:Scan",
+                "dynamodb:ConditionCheckItem",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:DescribeTable",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "TransformDeliveryAttemptTable4673E1C9",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
+                "dynamodb:GetRecords",
+                "dynamodb:GetShardIterator",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "TransformDeliveryAttemptTable4673E1C9",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
+                "sqs:ChangeMessageVisibilityBatch",
+                "sqs:DeleteMessageBatch",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "TrackerSubscribedConsumerConsumerQ918EA9D9",
+                  "Arn",
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "TrackerSubscribedConsumerServiceRoleDefaultPolicyB604E0CB",
+        "Roles": [
+          {
+            "Ref": "TrackerSubscribedConsumerServiceRoleB3B9BA53",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "TrackerSubscribedConsumerSqsEventSourcetestTrackerSubscribedConsumerConsumerQD8D9C512E4756118": {
+      "Properties": {
+        "EventSourceArn": {
+          "Fn::GetAtt": [
+            "TrackerSubscribedConsumerConsumerQ918EA9D9",
+            "Arn",
+          ],
+        },
+        "FunctionName": {
+          "Ref": "TrackerSubscribedConsumer6124300C",
+        },
+        "FunctionResponseTypes": [
+          "ReportBatchItemFailures",
+        ],
+        "MetricsConfig": {
+          "Metrics": [
+            "EventCount",
+          ],
+        },
+        "ScalingConfig": {
+          "MaximumConcurrency": 100,
+        },
+      },
+      "Type": "AWS::Lambda::EventSourceMapping",
     },
     "TrackerSubscriptionTable408C8229": {
       "DeletionPolicy": "RetainExceptOnCreate",
@@ -816,6 +5242,768 @@ exports[`Snapshot 1`] = `
       },
       "Type": "AWS::DynamoDB::GlobalTable",
       "UpdateReplacePolicy": "Retain",
+    },
+    "TrackerUnsubscribedConsumerConsumerDlq1C74356F": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "KmsDataKeyReusePeriodSeconds": 3600,
+        "KmsMasterKeyId": {
+          "Fn::GetAtt": [
+            "TrackerUnsubscribedConsumerQueueEncryptionKey57834AA9",
+            "Arn",
+          ],
+        },
+        "MessageRetentionPeriod": 604800,
+        "QueueName": "test-consumer-dlq-TrackerUnsubscribedConsumer",
+        "VisibilityTimeout": 120,
+      },
+      "Type": "AWS::SQS::Queue",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "TrackerUnsubscribedConsumerConsumerDlqPolicy1556D063": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sqs:*",
+              "Condition": {
+                "Bool": {
+                  "aws:SecureTransport": "false",
+                },
+              },
+              "Effect": "Deny",
+              "Principal": {
+                "AWS": "*",
+              },
+              "Resource": {
+                "Fn::GetAtt": [
+                  "TrackerUnsubscribedConsumerConsumerDlq1C74356F",
+                  "Arn",
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "Queues": [
+          {
+            "Ref": "TrackerUnsubscribedConsumerConsumerDlq1C74356F",
+          },
+        ],
+      },
+      "Type": "AWS::SQS::QueuePolicy",
+    },
+    "TrackerUnsubscribedConsumerConsumerQ12ED5E22": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "KmsDataKeyReusePeriodSeconds": 3600,
+        "KmsMasterKeyId": {
+          "Fn::GetAtt": [
+            "TrackerUnsubscribedConsumerQueueEncryptionKey57834AA9",
+            "Arn",
+          ],
+        },
+        "MessageRetentionPeriod": 604800,
+        "RedrivePolicy": {
+          "deadLetterTargetArn": {
+            "Fn::GetAtt": [
+              "TrackerUnsubscribedConsumerConsumerDlq1C74356F",
+              "Arn",
+            ],
+          },
+          "maxReceiveCount": 5,
+        },
+        "VisibilityTimeout": 120,
+      },
+      "Type": "AWS::SQS::Queue",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "TrackerUnsubscribedConsumerConsumerQPolicyBB3E0779": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sqs:*",
+              "Condition": {
+                "Bool": {
+                  "aws:SecureTransport": "false",
+                },
+              },
+              "Effect": "Deny",
+              "Principal": {
+                "AWS": "*",
+              },
+              "Resource": {
+                "Fn::GetAtt": [
+                  "TrackerUnsubscribedConsumerConsumerQ12ED5E22",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
+                "sqs:SendMessage",
+                "sqs:GetQueueAttributes",
+                "sqs:GetQueueUrl",
+              ],
+              "Condition": {
+                "StringEquals": {
+                  "aws:SourceAccount": {
+                    "Ref": "AWS::AccountId",
+                  },
+                },
+              },
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "events.amazonaws.com",
+              },
+              "Resource": {
+                "Fn::GetAtt": [
+                  "TrackerUnsubscribedConsumerConsumerQ12ED5E22",
+                  "Arn",
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "Queues": [
+          {
+            "Ref": "TrackerUnsubscribedConsumerConsumerQ12ED5E22",
+          },
+        ],
+      },
+      "Type": "AWS::SQS::QueuePolicy",
+    },
+    "TrackerUnsubscribedConsumerDefaultlogs56798DE5": {
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "LogGroupClass": "INFREQUENT_ACCESS",
+        "RetentionInDays": 30,
+        "Tags": [
+          {
+            "Key": "SkipNewRelic",
+            "Value": "true",
+          },
+        ],
+      },
+      "Type": "AWS::Logs::LogGroup",
+      "UpdateReplacePolicy": "Retain",
+    },
+    "TrackerUnsubscribedConsumerDlqAC46918D": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "KmsDataKeyReusePeriodSeconds": 3600,
+        "KmsMasterKeyId": {
+          "Fn::GetAtt": [
+            "TrackerUnsubscribedConsumerQueueEncryptionKey57834AA9",
+            "Arn",
+          ],
+        },
+        "MessageRetentionPeriod": 604800,
+        "QueueName": "test-dlq-TrackerUnsubscribedConsumer",
+        "VisibilityTimeout": 120,
+      },
+      "Type": "AWS::SQS::Queue",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "TrackerUnsubscribedConsumerDlqPolicyCD5F3A5E": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sqs:*",
+              "Condition": {
+                "Bool": {
+                  "aws:SecureTransport": "false",
+                },
+              },
+              "Effect": "Deny",
+              "Principal": {
+                "AWS": "*",
+              },
+              "Resource": {
+                "Fn::GetAtt": [
+                  "TrackerUnsubscribedConsumerDlqAC46918D",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": "sqs:SendMessage",
+              "Condition": {
+                "StringEquals": {
+                  "aws:SourceAccount": {
+                    "Ref": "AWS::AccountId",
+                  },
+                },
+              },
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "events.amazonaws.com",
+              },
+              "Resource": {
+                "Fn::GetAtt": [
+                  "TrackerUnsubscribedConsumerDlqAC46918D",
+                  "Arn",
+                ],
+              },
+              "Sid": "AllowEventRuletestTrackerUnsubscribedConsumerEventRule14337F07",
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "Queues": [
+          {
+            "Ref": "TrackerUnsubscribedConsumerDlqAC46918D",
+          },
+        ],
+      },
+      "Type": "AWS::SQS::QueuePolicy",
+    },
+    "TrackerUnsubscribedConsumerE59F4612": {
+      "DependsOn": [
+        "TrackerUnsubscribedConsumerServiceRoleDefaultPolicyA6D27612",
+        "TrackerUnsubscribedConsumerServiceRole149DAD97",
+      ],
+      "Properties": {
+        "Architectures": [
+          "arm64",
+        ],
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "a101c740dc1be5edcbc7bf9af559657cb9e75cb5460223ed8a2da14bf0804630.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "AWS_CRT_NODEJS_BINARY_RELATIVE_PATH": "bin/linux-arm64-glibc/aws-crt-nodejs.node",
+            "CLIENT_CONFIG_TABLE_NAME": {
+              "Ref": "ClientConfigTableE705763C",
+            },
+            "ENVIRONMENT": "test",
+            "EVENTBUS_ARN": {
+              "Fn::Join": [
+                "",
+                [
+                  "arn:",
+                  {
+                    "Ref": "AWS::Partition",
+                  },
+                  ":events:",
+                  {
+                    "Ref": "AWS::Region",
+                  },
+                  ":",
+                  {
+                    "Ref": "AWS::AccountId",
+                  },
+                  ":event-bus/bifrost",
+                ],
+              ],
+            },
+            "LOG_LEVEL": "info",
+            "MERGED_API_URL": "https://graph.dev.shipveho.com/graphql",
+            "NEW_RELIC_ACCOUNT_ID": "3433923",
+            "NEW_RELIC_EXTENSION_LOG_LEVEL": "INFO",
+            "NEW_RELIC_EXTENSION_SEND_EXTENSION_LOGS": "false",
+            "NEW_RELIC_EXTENSION_SEND_FUNCTION_LOGS": "true",
+            "NEW_RELIC_LAMBDA_HANDLER": "index.handler",
+            "NODE_ENV": "production",
+            "NR_TAGS": {
+              "Fn::Join": [
+                "",
+                [
+                  "service:test-service;region:",
+                  {
+                    "Ref": "AWS::Region",
+                  },
+                  ";environment:test;team:growth",
+                ],
+              ],
+            },
+            "PARAMETERS_SECRETS_EXTENSION_CACHE_ENABLED": "true",
+            "PARAMETERS_SECRETS_EXTENSION_CACHE_SIZE": "1000",
+            "PARAMETERS_SECRETS_EXTENSION_HTTP_PORT": "2773",
+            "PARAMETERS_SECRETS_EXTENSION_LOG_LEVEL": "warn",
+            "PARAMETERS_SECRETS_EXTENSION_MAX_CONNECTIONS": "3",
+            "SECRETS_MANAGER_TIMEOUT_MILLIS": "0",
+            "SECRETS_MANAGER_TTL": "300",
+            "SERVICE_NAME": "test-service",
+            "SSM_PARAMETER_STORE_TIMEOUT_MILLIS": "0",
+            "SSM_PARAMETER_STORE_TTL": "300",
+            "STACK_NAME": "test",
+            "TRACKER_SUBSCRIPTION_TABLE_NAME": {
+              "Ref": "TrackerSubscriptionTable408C8229",
+            },
+            "TRANSFORM_DELIVERY_ATTEMPT_TABLE_NAME": {
+              "Ref": "TransformDeliveryAttemptTable4673E1C9",
+            },
+          },
+        },
+        "Handler": "newrelic-lambda-wrapper.handler",
+        "Layers": [
+          {
+            "Fn::FindInMap": [
+              "ParamsandsecretslayerMap",
+              {
+                "Ref": "AWS::Region",
+              },
+              "1x0x103xarm64",
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:aws:lambda:",
+                {
+                  "Ref": "AWS::Region",
+                },
+                ":451483290750:layer:NewRelicNodeJS20XARM64:96",
+              ],
+            ],
+          },
+        ],
+        "LoggingConfig": {
+          "ApplicationLogLevel": "INFO",
+          "LogFormat": "JSON",
+          "LogGroup": {
+            "Ref": "TrackerUnsubscribedConsumerDefaultlogs56798DE5",
+          },
+        },
+        "MemorySize": 1048,
+        "Role": {
+          "Fn::GetAtt": [
+            "TrackerUnsubscribedConsumerServiceRole149DAD97",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs20.x",
+        "Timeout": 30,
+        "TracingConfig": {
+          "Mode": "Active",
+        },
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "TrackerUnsubscribedConsumerEventRuleDD47C7C2": {
+      "DependsOn": [
+        "TrackerUnsubscribedConsumerConsumerQPolicyBB3E0779",
+        "TrackerUnsubscribedConsumerDlqPolicyCD5F3A5E",
+      ],
+      "Properties": {
+        "Description": "Processes tracker unsubscriptions — removes subscription record",
+        "EventBusName": {
+          "Fn::ImportValue": "BifrostEventBusName",
+        },
+        "EventPattern": {
+          "account": [
+            {
+              "Ref": "AWS::AccountId",
+            },
+          ],
+          "detail-type": [
+            "TrackingSubscriptionDeleted",
+          ],
+        },
+        "State": "ENABLED",
+        "Targets": [
+          {
+            "Arn": {
+              "Fn::GetAtt": [
+                "TrackerUnsubscribedConsumerConsumerQ12ED5E22",
+                "Arn",
+              ],
+            },
+            "DeadLetterConfig": {
+              "Arn": {
+                "Fn::GetAtt": [
+                  "TrackerUnsubscribedConsumerDlqAC46918D",
+                  "Arn",
+                ],
+              },
+            },
+            "Id": "Target0",
+            "RetryPolicy": {
+              "MaximumEventAgeInSeconds": 21600,
+              "MaximumRetryAttempts": 90,
+            },
+          },
+        ],
+      },
+      "Type": "AWS::Events::Rule",
+    },
+    "TrackerUnsubscribedConsumerQueueEncryptionKey57834AA9": {
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "Description": "test SQS Encryption Key",
+        "EnableKeyRotation": true,
+        "Enabled": true,
+        "KeyPolicy": {
+          "Statement": [
+            {
+              "Action": "kms:*",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition",
+                      },
+                      ":iam::",
+                      {
+                        "Ref": "AWS::AccountId",
+                      },
+                      ":root",
+                    ],
+                  ],
+                },
+              },
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "kms:Decrypt",
+                "kms:Encrypt",
+                "kms:ReEncrypt*",
+                "kms:GenerateDataKey*",
+              ],
+              "Condition": {
+                "StringEquals": {
+                  "aws:SourceAccount": {
+                    "Ref": "AWS::AccountId",
+                  },
+                },
+              },
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "events.amazonaws.com",
+              },
+              "Resource": "*",
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "Tags": [
+          {
+            "Key": "KeyUsage",
+            "Value": "SQS",
+          },
+        ],
+      },
+      "Type": "AWS::KMS::Key",
+      "UpdateReplacePolicy": "Retain",
+    },
+    "TrackerUnsubscribedConsumerServiceRole149DAD97": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::",
+                {
+                  "Ref": "AWS::AccountId",
+                },
+                ":policy/merged-api-ReadApiPolicy",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "TrackerUnsubscribedConsumerServiceRoleDefaultPolicyA6D27612": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "sqs:ReceiveMessage",
+                "sqs:ChangeMessageVisibility",
+                "sqs:GetQueueUrl",
+                "sqs:DeleteMessage",
+                "sqs:GetQueueAttributes",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "TrackerUnsubscribedConsumerConsumerQ12ED5E22",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": "kms:Decrypt",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "TrackerUnsubscribedConsumerQueueEncryptionKey57834AA9",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "NewRelicLicenseKeySecret-NewRelic-LicenseKeySecretARN",
+              },
+            },
+            {
+              "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition",
+                    },
+                    ":secretsmanager:",
+                    {
+                      "Ref": "AWS::Region",
+                    },
+                    ":",
+                    {
+                      "Ref": "AWS::AccountId",
+                    },
+                    ":secret:/shared/statsig-??????",
+                  ],
+                ],
+              },
+            },
+            {
+              "Action": [
+                "dynamodb:BatchGetItem",
+                "dynamodb:Query",
+                "dynamodb:GetItem",
+                "dynamodb:Scan",
+                "dynamodb:ConditionCheckItem",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:DescribeTable",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "ClientConfigTableE705763C",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
+                "dynamodb:GetRecords",
+                "dynamodb:GetShardIterator",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "ClientConfigTableE705763C",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
+                "dynamodb:BatchGetItem",
+                "dynamodb:Query",
+                "dynamodb:GetItem",
+                "dynamodb:Scan",
+                "dynamodb:ConditionCheckItem",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:DescribeTable",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "TrackerSubscriptionTable408C8229",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "TrackerSubscriptionTable408C8229",
+                          "Arn",
+                        ],
+                      },
+                      "/index/*",
+                    ],
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": [
+                "dynamodb:GetRecords",
+                "dynamodb:GetShardIterator",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "TrackerSubscriptionTable408C8229",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "TrackerSubscriptionTable408C8229",
+                          "Arn",
+                        ],
+                      },
+                      "/index/*",
+                    ],
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": [
+                "dynamodb:BatchGetItem",
+                "dynamodb:Query",
+                "dynamodb:GetItem",
+                "dynamodb:Scan",
+                "dynamodb:ConditionCheckItem",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:DescribeTable",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "TransformDeliveryAttemptTable4673E1C9",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
+                "dynamodb:GetRecords",
+                "dynamodb:GetShardIterator",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "TransformDeliveryAttemptTable4673E1C9",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
+                "sqs:ChangeMessageVisibilityBatch",
+                "sqs:DeleteMessageBatch",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "TrackerUnsubscribedConsumerConsumerQ12ED5E22",
+                  "Arn",
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "TrackerUnsubscribedConsumerServiceRoleDefaultPolicyA6D27612",
+        "Roles": [
+          {
+            "Ref": "TrackerUnsubscribedConsumerServiceRole149DAD97",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "TrackerUnsubscribedConsumerSqsEventSourcetestTrackerUnsubscribedConsumerConsumerQ6C8234EF1896198B": {
+      "Properties": {
+        "EventSourceArn": {
+          "Fn::GetAtt": [
+            "TrackerUnsubscribedConsumerConsumerQ12ED5E22",
+            "Arn",
+          ],
+        },
+        "FunctionName": {
+          "Ref": "TrackerUnsubscribedConsumerE59F4612",
+        },
+        "FunctionResponseTypes": [
+          "ReportBatchItemFailures",
+        ],
+        "MetricsConfig": {
+          "Metrics": [
+            "EventCount",
+          ],
+        },
+        "ScalingConfig": {
+          "MaximumConcurrency": 100,
+        },
+      },
+      "Type": "AWS::Lambda::EventSourceMapping",
     },
     "TransformDeliveryAttemptTable4673E1C9": {
       "DeletionPolicy": "RetainExceptOnCreate",
