@@ -2,6 +2,7 @@ import { log } from '@veho/observability-sdk'
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
 
 import { clientConfigDataAccessor } from '../dataAccessors/clientConfigDataAccessor'
+import type { ClientConfig } from '../database'
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   const clientId = event.pathParameters?.clientId
@@ -15,8 +16,20 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
   log.info('Upserting client config', { clientId })
 
-  const body = JSON.parse(event.body)
-  const config = await clientConfigDataAccessor.create({ ...body, clientId })
+  let body: Omit<ClientConfig, 'clientId'>
+  try {
+    body = JSON.parse(event.body)
+  } catch {
+    return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON body' }) }
+  }
 
-  return { statusCode: 200, body: JSON.stringify(config) }
+  try {
+    const config = await clientConfigDataAccessor.create({ ...body, clientId } as ClientConfig)
+    return { statusCode: 200, body: JSON.stringify(config) }
+  } catch (error) {
+    if (error instanceof Error && error.name === 'ValidationError') {
+      return { statusCode: 400, body: JSON.stringify({ error: error.message }) }
+    }
+    throw error
+  }
 }

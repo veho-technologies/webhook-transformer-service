@@ -1,4 +1,4 @@
-import { DeleteItemCommand, GetItemCommand, PutItemCommand } from 'dynamodb-toolbox'
+import { DeleteItemCommand, GetItemCommand, PutItemCommand, ScanCommand } from 'dynamodb-toolbox'
 
 import type { ClientConfig } from '../database'
 import { clientConfigDataAccessor } from './clientConfigDataAccessor'
@@ -8,8 +8,12 @@ const mockKey = jest.fn().mockReturnValue({ send: mockSend })
 const mockItem = jest.fn().mockReturnValue({ send: mockSend })
 const mockBuild = jest.fn().mockReturnValue({ key: mockKey, item: mockItem })
 
+const mockEntities = jest.fn().mockReturnValue({ send: mockSend })
+const mockTableBuild = jest.fn().mockReturnValue({ entities: mockEntities })
+
 jest.mock('../database', () => ({
   ClientConfigEntity: { build: (...args: unknown[]) => mockBuild(...args) },
+  clientConfigTable: { build: (...args: unknown[]) => mockTableBuild(...args) },
 }))
 
 describe('clientConfigDataAccessor', () => {
@@ -53,6 +57,27 @@ describe('clientConfigDataAccessor', () => {
       expect(result).toEqual(mockConfig)
       expect(mockBuild).toHaveBeenCalledWith(PutItemCommand)
       expect(mockItem).toHaveBeenCalledWith(mockConfig)
+    })
+  })
+
+  describe('list', () => {
+    it('should return all items from scan', async () => {
+      const configs = [mockConfig, { ...mockConfig, clientId: 'client-456' }]
+      mockSend.mockResolvedValue({ Items: configs })
+
+      const result = await clientConfigDataAccessor.list()
+
+      expect(result).toEqual(configs)
+      expect(mockTableBuild).toHaveBeenCalledWith(ScanCommand)
+      expect(mockEntities).toHaveBeenCalledWith(expect.anything())
+    })
+
+    it('should return empty array when no items exist', async () => {
+      mockSend.mockResolvedValue({})
+
+      const result = await clientConfigDataAccessor.list()
+
+      expect(result).toEqual([])
     })
   })
 
