@@ -262,7 +262,7 @@ exports[`Snapshot 1`] = `
         "Environment": {
           "Variables": {
             "AWS_NODEJS_CONNECTION_REUSE_ENABLED": "1",
-            "NOW": "1773845847306",
+            "NOW": "1773848455083",
             "REST_API_ID": {
               "Ref": "CrudApiRestApi9FE02207",
             },
@@ -282,7 +282,7 @@ exports[`Snapshot 1`] = `
       },
       "Type": "AWS::Lambda::Function",
     },
-    "CrudApiDeployDefaultStageFnCurrentVersionFC10406315a01ad0cfb014eedcc882bad2282f12": {
+    "CrudApiDeployDefaultStageFnCurrentVersionFC104063a110a60f3b4a1692a3a3e72301cbab5c": {
       "Metadata": {
         "aws:cdk:do-not-refactor": true,
       },
@@ -398,7 +398,7 @@ exports[`Snapshot 1`] = `
       "Properties": {
         "ExecuteOnHandlerChange": true,
         "HandlerArn": {
-          "Ref": "CrudApiDeployDefaultStageFnCurrentVersionFC10406315a01ad0cfb014eedcc882bad2282f12",
+          "Ref": "CrudApiDeployDefaultStageFnCurrentVersionFC104063a110a60f3b4a1692a3a3e72301cbab5c",
         },
         "InvocationType": "Event",
         "ServiceToken": {
@@ -2512,7 +2512,7 @@ exports[`Snapshot 1`] = `
           "S3Bucket": {
             "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
           },
-          "S3Key": "ae8724ecd6b7b4d997a168ebf86957fb19c16247ef545dbbdd259233919ecce0.zip",
+          "S3Key": "6b9ca0516a6ef10102a258e090f11a3c2beaf3e8ad0edff03d3ef78b7185b997.zip",
         },
         "Environment": {
           "Variables": {
