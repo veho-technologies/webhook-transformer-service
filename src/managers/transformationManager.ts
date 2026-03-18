@@ -183,7 +183,7 @@ export const transformationManager = {
       carrierId: params.carrierId,
       clientId,
       subscribedAt: now.toISOString(),
-      ttl: sixMonthsTtl,
+      timeToLive: sixMonthsTtl,
     })
 
     const config = await clientConfigDataAccessor.getByClientId(clientId)

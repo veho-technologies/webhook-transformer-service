@@ -20,7 +20,7 @@ jest.mock('../database', () => ({
 jest.mock('ulid', () => ({ ulid: () => 'mock-ulid-123' }))
 
 describe('transformDeliveryAttemptDataAccessor', () => {
-  const mockAttemptInput: Omit<TransformDeliveryAttempt, 'id' | 'ttl' | 'clientIdTrackingNumber'> = {
+  const mockAttemptInput: Omit<TransformDeliveryAttempt, 'id' | 'timeToLive' | 'clientIdTrackingNumber'> = {
     trackingNumber: 'TRK-123',
     clientId: 'client-123',
     trackerReferenceId: 'ref-456',
@@ -34,7 +34,7 @@ describe('transformDeliveryAttemptDataAccessor', () => {
   beforeEach(() => jest.clearAllMocks())
 
   describe('create', () => {
-    it('should set id via ulid and ttl to ~30 days from now', async () => {
+    it('should set id via ulid and timeToLive to ~30 days from now', async () => {
       const now = Date.now()
       jest.spyOn(Date, 'now').mockReturnValue(now)
       mockSend.mockResolvedValue({})
@@ -46,13 +46,13 @@ describe('transformDeliveryAttemptDataAccessor', () => {
       expect(mockItem).toHaveBeenCalledWith({
         ...mockAttemptInput,
         id: 'mock-ulid-123',
-        ttl: expectedTtl,
+        timeToLive: expectedTtl,
         clientIdTrackingNumber: 'client-123#TRK-123',
       })
       expect(result).toEqual({
         ...mockAttemptInput,
         id: 'mock-ulid-123',
-        ttl: expectedTtl,
+        timeToLive: expectedTtl,
         clientIdTrackingNumber: 'client-123#TRK-123',
       })
 
@@ -65,7 +65,7 @@ describe('transformDeliveryAttemptDataAccessor', () => {
       const mockAttempt = {
         ...mockAttemptInput,
         id: 'ulid-123',
-        ttl: 1234567890,
+        timeToLive: 1234567890,
         clientIdTrackingNumber: 'client-123#TRK-123',
       }
       mockSend.mockResolvedValue({ Items: [mockAttempt] })

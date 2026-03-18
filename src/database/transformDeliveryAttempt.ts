@@ -24,7 +24,7 @@ export const TransformDeliveryAttemptEntity = new Entity({
     responseBody: schema.string().optional(),
     idempotencyKey: schema.string().optional(),
     occurredAt: schema.string().required(),
-    ttl: schema.number().optional(),
+    timeToLive: schema.number().optional(),
   }),
 })
 
