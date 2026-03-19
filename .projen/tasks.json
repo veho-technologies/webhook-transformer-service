@@ -151,6 +151,21 @@
         }
       ]
     },
+    "deploy-no-synth:sandbox": {
+      "name": "deploy-no-synth:sandbox",
+      "description": "Deploy sandbox without synth using cdk.out/",
+      "steps": [
+        {
+          "exec": "cdk deploy --require-approval never --profile veho-sandbox --app 'cdk.out/' \"webhook-transformer-service-sandbox\" \"webhook-transformer-service-sandbox-*\" --method=direct --outputs-file .outputs.sandbox.json-temp --concurrency 5"
+        },
+        {
+          "exec": "cp .outputs.sandbox.json-temp .outputs.sandbox.json && rm .outputs.sandbox.json-temp"
+        },
+        {
+          "spawn": "update-event-studio-service:sandbox"
+        }
+      ]
+    },
     "deploy-no-synth:staging": {
       "name": "deploy-no-synth:staging",
       "description": "Deploy staging without synth using cdk.out/",
@@ -214,6 +229,20 @@
         }
       ]
     },
+    "deploy:sandbox": {
+      "name": "deploy:sandbox",
+      "steps": [
+        {
+          "exec": "cdk deploy --require-approval never --profile veho-sandbox \"webhook-transformer-service-sandbox\" \"webhook-transformer-service-sandbox-*\" --method=direct --outputs-file .outputs.sandbox.json-temp --concurrency 5"
+        },
+        {
+          "exec": "cp .outputs.sandbox.json-temp .outputs.sandbox.json && rm .outputs.sandbox.json-temp"
+        },
+        {
+          "spawn": "update-event-studio-service:sandbox"
+        }
+      ]
+    },
     "deploy:staging": {
       "name": "deploy:staging",
       "steps": [
@@ -274,6 +303,14 @@
         }
       ]
     },
+    "diff-no-synth:sandbox": {
+      "name": "diff-no-synth:sandbox",
+      "steps": [
+        {
+          "exec": "cdk diff --profile veho-sandbox --fail=0 --progress=events --app 'cdk.out/' \"webhook-transformer-service-sandbox\" \"webhook-transformer-service-sandbox-*\""
+        }
+      ]
+    },
     "diff-no-synth:staging": {
       "name": "diff-no-synth:staging",
       "steps": [
@@ -306,6 +343,14 @@
       "steps": [
         {
           "exec": "cdk diff --profile veho-prod --fail=0 --progress=events \"webhook-transformer-service-prod\" \"webhook-transformer-service-prod-*\""
+        }
+      ]
+    },
+    "diff:sandbox": {
+      "name": "diff:sandbox",
+      "steps": [
+        {
+          "exec": "cdk diff --profile veho-sandbox --fail=0 --progress=events \"webhook-transformer-service-sandbox\" \"webhook-transformer-service-sandbox-*\""
         }
       ]
     },
@@ -541,6 +586,14 @@
         }
       ]
     },
+    "synth:sandbox": {
+      "name": "synth:sandbox",
+      "steps": [
+        {
+          "exec": "cdk synth --profile veho-sandbox \"webhook-transformer-service-sandbox\" \"webhook-transformer-service-sandbox-*\""
+        }
+      ]
+    },
     "synth:silent": {
       "name": "synth:silent",
       "description": "Synthesizes your cdk app into cdk.out and suppresses the template in stdout (part of \"yarn build\")",
@@ -614,6 +667,14 @@
       "steps": [
         {
           "exec": "apiid=$(aws apigateway get-rest-apis --profile veho-prod --region us-east-1 --query \"items[?name=='event-studio-internal']|[0].id\" | tr -d '\"')\nif [ \"null\" = \"${apiid}\" ] || [ \"\" = \"${apiid}\" ]; then \n  echo \"event studio api not found!\"\nelse\n  resourceid=$(aws apigateway get-resources --profile veho-prod --region us-east-1 --rest-api-id $apiid --query \"items[?path=='/services']|[0].id\" | tr -d '\"')\n  if [ \"null\" = \"${resourceid}\" ] || [ \"\" = \"${apiid}\" ]; then\n      echo \"event studio services resource not found!\"\n  else\n    aws apigateway test-invoke-method --profile veho-prod --rest-api-id $apiid --resource-id $resourceid --http-method POST --body \"{\\\"repoName\\\":\\\"veho-technologies/webhook-transformer-service\\\",\\\"serviceName\\\":\\\"webhook-transformer-service\\\"}\"\n  fi\nfi"
+        }
+      ]
+    },
+    "update-event-studio-service:sandbox": {
+      "name": "update-event-studio-service:sandbox",
+      "steps": [
+        {
+          "exec": "apiid=$(aws apigateway get-rest-apis --profile veho-sandbox --region us-east-1 --query \"items[?name=='event-studio-internal']|[0].id\" | tr -d '\"')\nif [ \"null\" = \"${apiid}\" ] || [ \"\" = \"${apiid}\" ]; then \n  echo \"event studio api not found!\"\nelse\n  resourceid=$(aws apigateway get-resources --profile veho-sandbox --region us-east-1 --rest-api-id $apiid --query \"items[?path=='/services']|[0].id\" | tr -d '\"')\n  if [ \"null\" = \"${resourceid}\" ] || [ \"\" = \"${apiid}\" ]; then\n      echo \"event studio services resource not found!\"\n  else\n    aws apigateway test-invoke-method --profile veho-sandbox --rest-api-id $apiid --resource-id $resourceid --http-method POST --body \"{\\\"repoName\\\":\\\"veho-technologies/webhook-transformer-service\\\",\\\"serviceName\\\":\\\"webhook-transformer-service\\\"}\"\n  fi\nfi"
         }
       ]
     },
