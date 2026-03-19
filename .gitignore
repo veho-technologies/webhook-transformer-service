@@ -63,6 +63,8 @@ codecov.SHA*
 .outputs.dev.json-temp
 .outputs.staging.json
 .outputs.staging.json-temp
+.outputs.sandbox.json
+.outputs.sandbox.json-temp
 .outputs.prod.json
 .outputs.prod.json-temp
 .outputs.personal.json

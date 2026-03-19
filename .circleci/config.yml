@@ -135,6 +135,35 @@ jobs:
           event: fail
           template: basic_fail_1
           channel: _circleci
+  deploy-sandbox:
+    docker:
+      - image: cimg/node:22.14
+    resource_class: small
+    steps:
+      - checkout:
+          method: blobless
+      - run:
+          name: Setup NPM token
+          command: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
+      - node/install-pnpm:
+          version: "10.18"
+      - node/install-packages:
+          pkg-manager: pnpm
+          with-cache: true
+          include-branch-in-cache-key: false
+      - aws-cli/setup:
+          role-arn: arn:aws:iam::050838062588:role/CircleCI-OIDC
+          profile-name: veho-sandbox
+      - attach_workspace:
+          at: .
+      - run:
+          name: Deploy to sandbox
+          command: npx projen deploy-no-synth:sandbox
+          no_output_timeout: 30m
+      - slack/notify:
+          event: fail
+          template: basic_fail_1
+          channel: _circleci
   diff-prod:
     docker:
       - image: cimg/node:22.14
@@ -282,6 +311,17 @@ workflows:
           requires:
             - test
             - synth
+          context:
+            - aws-platform
+      - deploy-sandbox:
+          filters:
+            branches:
+              only:
+                - main
+          requires:
+            - test
+            - synth
+            - deploy-staging
           context:
             - aws-platform
       - diff-prod:
