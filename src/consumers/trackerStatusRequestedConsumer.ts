@@ -1,11 +1,12 @@
 import type { TrackingStatusRequestedEvent } from '@veho/event-types'
+import { sqsEventBridgeHandler } from '@veho/lambda-utils'
 import { log } from '@veho/observability-sdk'
 import type { EventBridgeEvent } from 'aws-lambda'
 
 import { trackerSubscriptionDataAccessor } from '../dataAccessors/trackerSubscriptionDataAccessor'
 import { transformationManager } from '../managers/transformationManager'
 
-export const handler = async (
+const handleMessage = async (
   event: EventBridgeEvent<'TrackingStatusRequested', TrackingStatusRequestedEvent>
 ): Promise<void> => {
   const { payload } = event.detail
@@ -24,3 +25,5 @@ export const handler = async (
     idempotencyKey: payload.idempotencyKey,
   })
 }
+
+export const handler = sqsEventBridgeHandler(handleMessage)

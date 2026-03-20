@@ -1,10 +1,11 @@
 import type { TrackingSubscriptionCreatedEvent } from '@veho/event-types'
+import { sqsEventBridgeHandler } from '@veho/lambda-utils'
 import { log } from '@veho/observability-sdk'
 import type { EventBridgeEvent } from 'aws-lambda'
 
 import { transformationManager } from '../managers/transformationManager'
 
-export const handler = async (
+const handleMessage = async (
   event: EventBridgeEvent<'TrackingSubscriptionCreated', TrackingSubscriptionCreatedEvent>
 ): Promise<void> => {
   const { payload } = event.detail
@@ -16,3 +17,5 @@ export const handler = async (
     carrierId: payload.providerCarrierId,
   })
 }
+
+export const handler = sqsEventBridgeHandler(handleMessage)

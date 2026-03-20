@@ -1,11 +1,12 @@
 import type { TrackingSubscriptionDeletedEvent } from '@veho/event-types'
+import { sqsEventBridgeHandler } from '@veho/lambda-utils'
 import { log } from '@veho/observability-sdk'
 import type { EventBridgeEvent } from 'aws-lambda'
 
 import { trackerSubscriptionDataAccessor } from '../dataAccessors/trackerSubscriptionDataAccessor'
 import { trackerSubscriptionManager } from '../managers/trackerSubscriptionManager'
 
-export const handler = async (
+const handleMessage = async (
   event: EventBridgeEvent<'TrackingSubscriptionDeleted', TrackingSubscriptionDeletedEvent>
 ): Promise<void> => {
   const { payload } = event.detail
@@ -20,3 +21,5 @@ export const handler = async (
 
   await trackerSubscriptionManager.removeSubscription(subscription.trackingNumber)
 }
+
+export const handler = sqsEventBridgeHandler(handleMessage)

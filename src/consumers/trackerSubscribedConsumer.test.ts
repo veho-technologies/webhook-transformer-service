@@ -2,6 +2,7 @@ import type { TrackingSubscriptionCreatedEvent } from '@veho/event-types'
 import type { EventBridgeEvent } from 'aws-lambda'
 
 import { transformationManager } from '../managers/transformationManager'
+import { noopCallback, wrapInSqsEvent } from './testUtils'
 import { handler } from './trackerSubscribedConsumer'
 
 jest.mock('../managers/transformationManager', () => ({
@@ -59,7 +60,7 @@ describe('trackerSubscribedConsumer', () => {
   beforeEach(() => jest.clearAllMocks())
 
   it('calls processInitialSubscription with trackingNumber, trackerReferenceId, and carrierId', async () => {
-    await handler(buildEvent())
+    await handler(wrapInSqsEvent(buildEvent()), {} as never, noopCallback)
 
     expect(mockProcessInitialSubscription).toHaveBeenCalledWith({
       trackingNumber: 'TRK-001',
@@ -69,15 +70,19 @@ describe('trackerSubscribedConsumer', () => {
   })
 
   it('does not create subscription directly — processInitialSubscription handles it', async () => {
-    await handler(buildEvent())
+    await handler(wrapInSqsEvent(buildEvent()), {} as never, noopCallback)
 
     expect(mockProcessInitialSubscription).toHaveBeenCalledTimes(1)
   })
 
-  it('lets errors propagate for EventBridge retry', async () => {
+  it('returns batch item failure when handler errors', async () => {
     const error = new Error('Lugus failure')
     mockProcessInitialSubscription.mockRejectedValue(error)
 
-    await expect(handler(buildEvent())).rejects.toThrow('Lugus failure')
+    const result = await handler(wrapInSqsEvent(buildEvent()), {} as never, noopCallback)
+
+    expect(result).toEqual({
+      batchItemFailures: [{ itemIdentifier: 'test-message-id' }],
+    })
   })
 })
