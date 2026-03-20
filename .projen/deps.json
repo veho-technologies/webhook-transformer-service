@@ -131,6 +131,10 @@
       "type": "runtime"
     },
     {
+      "name": "@veho/lambda-utils",
+      "type": "runtime"
+    },
+    {
       "name": "@veho/merged-api",
       "type": "runtime"
     },
