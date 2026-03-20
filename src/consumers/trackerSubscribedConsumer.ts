@@ -18,4 +18,4 @@ const handleMessage = async (
   })
 }
 
-export const handler = sqsEventBridgeHandler(wrapWithUncaughtErrorLogging(handleMessage))
+export const handler = wrapWithUncaughtErrorLogging(sqsEventBridgeHandler(handleMessage))
