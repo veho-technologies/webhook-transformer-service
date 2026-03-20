@@ -22,4 +22,4 @@ const handleMessage = async (
   await trackerSubscriptionManager.removeSubscription(subscription.trackingNumber)
 }
 
-export const handler = wrapWithUncaughtErrorLogging(sqsEventBridgeHandler(handleMessage))
+export const handler = sqsEventBridgeHandler(wrapWithUncaughtErrorLogging(handleMessage))

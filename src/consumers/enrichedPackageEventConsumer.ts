@@ -13,4 +13,4 @@ const handleMessage = async (
   await transformationManager.processEnrichedPackageEvent(event.detail)
 }
 
-export const handler = wrapWithUncaughtErrorLogging(sqsEventBridgeHandler(handleMessage))
+export const handler = sqsEventBridgeHandler(wrapWithUncaughtErrorLogging(handleMessage))
