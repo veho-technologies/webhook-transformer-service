@@ -1,6 +1,6 @@
 import type { TrackingStatusRequestedEvent } from '@veho/event-types'
 import { sqsEventBridgeHandler } from '@veho/lambda-utils'
-import { log } from '@veho/observability-sdk'
+import { log, wrapWithUncaughtErrorLogging } from '@veho/observability-sdk'
 import type { EventBridgeEvent } from 'aws-lambda'
 
 import { trackerSubscriptionDataAccessor } from '../dataAccessors/trackerSubscriptionDataAccessor'
@@ -26,4 +26,4 @@ const handleMessage = async (
   })
 }
 
-export const handler = sqsEventBridgeHandler(handleMessage)
+export const handler = wrapWithUncaughtErrorLogging(sqsEventBridgeHandler(handleMessage))
