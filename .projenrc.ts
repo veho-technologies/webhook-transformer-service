@@ -28,6 +28,7 @@ const project = new GaiaCdkApp({
     'aws-sigv4-fetch',
     '@veho/merged-api',
     '@veho/event-types',
+    '@veho/lambda-utils',
   ],
   environments: [
     { name: 'dev', branch: 'dev', usedForDevelopment: true, awsAccountId: '657230704726' },

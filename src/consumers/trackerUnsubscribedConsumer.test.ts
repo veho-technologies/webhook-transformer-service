@@ -3,6 +3,7 @@ import type { EventBridgeEvent } from 'aws-lambda'
 
 import { trackerSubscriptionDataAccessor } from '../dataAccessors/trackerSubscriptionDataAccessor'
 import { trackerSubscriptionManager } from '../managers/trackerSubscriptionManager'
+import { noopCallback, wrapInSqsEvent } from './testUtils'
 import { handler } from './trackerUnsubscribedConsumer'
 
 jest.mock('../dataAccessors/trackerSubscriptionDataAccessor', () => ({
@@ -73,7 +74,7 @@ describe('trackerUnsubscribedConsumer', () => {
       subscribedAt: '2024-01-01T00:00:00Z',
     })
 
-    await handler(buildEvent())
+    await handler(wrapInSqsEvent(buildEvent()), {} as never, noopCallback)
 
     expect(mockGetByTrackerReferenceId).toHaveBeenCalledWith('shopify-tracker-001')
     expect(mockRemoveSubscription).toHaveBeenCalledWith('TRK-001')
@@ -82,15 +83,19 @@ describe('trackerUnsubscribedConsumer', () => {
   it('warns and returns when no subscription found', async () => {
     mockGetByTrackerReferenceId.mockResolvedValue(undefined)
 
-    await handler(buildEvent())
+    await handler(wrapInSqsEvent(buildEvent()), {} as never, noopCallback)
 
     expect(mockRemoveSubscription).not.toHaveBeenCalled()
   })
 
-  it('lets errors propagate for EventBridge retry', async () => {
+  it('returns batch item failure when handler errors', async () => {
     const error = new Error('DynamoDB failure')
     mockGetByTrackerReferenceId.mockRejectedValue(error)
 
-    await expect(handler(buildEvent())).rejects.toThrow('DynamoDB failure')
+    const result = await handler(wrapInSqsEvent(buildEvent()), {} as never, noopCallback)
+
+    expect(result).toEqual({
+      batchItemFailures: [{ itemIdentifier: 'test-message-id' }],
+    })
   })
 })

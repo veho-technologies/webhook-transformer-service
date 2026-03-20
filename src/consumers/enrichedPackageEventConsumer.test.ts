@@ -2,6 +2,7 @@ import type { EventBridgeEvent } from 'aws-lambda'
 
 import { type EnrichedPackageEventWithEventLog, transformationManager } from '../managers/transformationManager'
 import { handler } from './enrichedPackageEventConsumer'
+import { noopCallback, wrapInSqsEvent } from './testUtils'
 
 jest.mock('../managers/transformationManager', () => ({
   transformationManager: {
@@ -41,16 +42,20 @@ describe('enrichedPackageEventConsumer', () => {
   beforeEach(() => jest.clearAllMocks())
 
   it('calls processEnrichedPackageEvent with event detail', async () => {
-    const event = buildEvent()
-    await handler(event)
+    const ebEvent = buildEvent()
+    await handler(wrapInSqsEvent(ebEvent), {} as never, noopCallback)
 
-    expect(mockProcessEnrichedPackageEvent).toHaveBeenCalledWith(event.detail)
+    expect(mockProcessEnrichedPackageEvent).toHaveBeenCalledWith(ebEvent.detail)
   })
 
-  it('lets errors propagate for EventBridge retry', async () => {
+  it('returns batch item failure when handler errors', async () => {
     const error = new Error('transformation failure')
     mockProcessEnrichedPackageEvent.mockRejectedValue(error)
 
-    await expect(handler(buildEvent())).rejects.toThrow('transformation failure')
+    const result = await handler(wrapInSqsEvent(buildEvent()), {} as never, noopCallback)
+
+    expect(result).toEqual({
+      batchItemFailures: [{ itemIdentifier: 'test-message-id' }],
+    })
   })
 })
