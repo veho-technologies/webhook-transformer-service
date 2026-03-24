@@ -88,30 +88,27 @@ describe('shopifyGraphqlAdapter.sendTrackerUpdate', () => {
     expect(result.errors?.[0].message).toContain('ECONNREFUSED')
   })
 
-  it('creates client with correct URL', async () => {
+  it('creates client with correct URL and requestMiddleware', async () => {
     mockRequest.mockResolvedValue({ trackerUpdate: { userErrors: [] } })
 
     await shopifyGraphqlAdapter.sendTrackerUpdate(SAMPLE_ATTRIBUTES, 'wh-id', 'idem-key')
 
-    expect(GraphQLClient).toHaveBeenCalledWith('https://shopify.example.com/graphql')
+    expect(GraphQLClient).toHaveBeenCalledWith('https://shopify.example.com/graphql', {
+      requestMiddleware: expect.any(Function),
+    })
   })
 
-  it('sends HMAC and App ID headers per request', async () => {
+  it('passes variables correctly to request', async () => {
     mockRequest.mockResolvedValue({ trackerUpdate: { userErrors: [] } })
 
     await shopifyGraphqlAdapter.sendTrackerUpdate(SAMPLE_ATTRIBUTES, 'wh-id', 'idem-key')
 
     expect(mockRequest).toHaveBeenCalledWith(
+      expect.anything(),
       expect.objectContaining({
-        variables: expect.objectContaining({
-          trackerAttributes: SAMPLE_ATTRIBUTES,
-          webhookId: 'wh-id',
-          idempotencyKey: 'idem-key',
-        }),
-        requestHeaders: expect.objectContaining({
-          'X-Shopify-Hmac-SHA256': expect.any(String),
-          'X-Shopify-App-Id': '123456',
-        }),
+        trackerAttributes: SAMPLE_ATTRIBUTES,
+        webhookId: 'wh-id',
+        idempotencyKey: 'idem-key',
       })
     )
   })

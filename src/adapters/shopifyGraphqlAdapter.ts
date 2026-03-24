@@ -69,8 +69,17 @@ function computeHmac(body: string, secret: string): string {
   return createHmac('sha256', secret).update(body, 'utf8').digest('base64')
 }
 
-function buildClient(): GraphQLClient {
-  return new GraphQLClient(process.env.SHOPIFY_API_URL!)
+function buildClient(secret: string): GraphQLClient {
+  return new GraphQLClient(process.env.SHOPIFY_API_URL!, {
+    requestMiddleware: request => {
+      const body = request.body as string
+      const hmac = computeHmac(body, secret)
+      const headers = new Headers(request.headers)
+      headers.set('X-Shopify-Hmac-SHA256', hmac)
+      headers.set('X-Shopify-App-Id', process.env.SHOPIFY_APP_ID!)
+      return { ...request, headers }
+    },
+  })
 }
 
 export const shopifyGraphqlAdapter = {
@@ -79,23 +88,16 @@ export const shopifyGraphqlAdapter = {
     webhookId: string,
     idempotencyKey: string
   ): Promise<ShopifyAdapterResult> {
-    const client = buildClient()
     const secret = await getHmacSecret()
-
-    const variables = { trackerAttributes, webhookId, idempotencyKey }
-    const body = JSON.stringify({ query: TRACKER_UPDATE_MUTATION, variables })
-    const hmac = computeHmac(body, secret)
+    const client = buildClient(secret)
 
     let data: TrackerUpdateResponse
 
     try {
-      data = await client.request<TrackerUpdateResponse>({
-        document: TRACKER_UPDATE_MUTATION,
-        variables,
-        requestHeaders: {
-          'X-Shopify-Hmac-SHA256': hmac,
-          'X-Shopify-App-Id': process.env.SHOPIFY_APP_ID!,
-        },
+      data = await client.request<TrackerUpdateResponse>(TRACKER_UPDATE_MUTATION, {
+        trackerAttributes,
+        webhookId,
+        idempotencyKey,
       })
     } catch (err) {
       if (err instanceof ClientError) {
