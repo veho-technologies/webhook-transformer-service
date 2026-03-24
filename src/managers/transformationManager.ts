@@ -103,9 +103,10 @@ export const transformationManager = {
     })
 
     const lugusEvents = await lugusAdapter.getPackageEventHistory(trackingNumber)
-    const events = buildTrackerEvents(lugusEvents, eventLevel, statusMap)
+    const lastLugusEvent = lugusEvents.at(-1)
+    const events = lastLugusEvent ? buildTrackerEvents([lastLugusEvent], eventLevel, statusMap) : []
 
-    const lastEventTimestamp = lugusEvents.at(-1)?.timestamp ?? ''
+    const lastEventTimestamp = lastLugusEvent?.timestamp ?? ''
     const idempotencyKey = `${trackingNumber}:${event.operation ?? 'unknown'}:${lastEventTimestamp}`
     const trackerAttributes: TrackerAttributes = {
       ...topLevelMapped,

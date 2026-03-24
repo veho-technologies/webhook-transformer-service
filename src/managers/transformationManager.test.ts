@@ -132,7 +132,6 @@ describe('transformationManager', () => {
           trackerReferenceId: 'ref-456',
           idempotencyKey: 'TRK-123:unknown:2024-01-02T14:00:00Z',
           events: [
-            { status: 'IN_TRANSIT', happenedAt: '2024-01-01T10:00:00Z', message: 'Package in transit' },
             { status: 'DELIVERED', happenedAt: '2024-01-02T14:00:00Z', message: 'Package delivered' },
           ] as TrackerEventAttributes[],
         })
@@ -210,18 +209,22 @@ describe('transformationManager', () => {
       expect(trackerAttrs.events).toEqual([])
     })
 
-    it('should apply event-level field mappings with statusMap correctly', async () => {
+    it('should only send the latest event from Lugus', async () => {
       mockGetByTrackingNumber.mockResolvedValue(MOCK_SUBSCRIPTION)
       mockGetByClientId.mockResolvedValue(MOCK_CONFIG)
+      mockGetPackageEventHistory.mockResolvedValue([
+        { eventType: 'pending', timestamp: '2024-01-01T10:00:00Z', message: 'Package in transit' },
+        { eventType: 'delivered', timestamp: '2024-01-02T14:00:00Z', message: 'Package delivered' },
+      ])
       mockSendTrackerUpdate.mockResolvedValue({ success: true })
       mockCreateAttempt.mockResolvedValue({})
 
       await transformationManager.processEnrichedPackageEvent(SAMPLE_ENRICHED_EVENT)
 
       const trackerAttrs = mockSendTrackerUpdate.mock.calls[0][0]
-      expect(trackerAttrs.events[0].status).toBe('IN_TRANSIT')
-      expect(trackerAttrs.events[0].happenedAt).toBe('2024-01-01T10:00:00Z')
-      expect(trackerAttrs.events[1].status).toBe('DELIVERED')
+      expect(trackerAttrs.events).toHaveLength(1)
+      expect(trackerAttrs.events[0].status).toBe('DELIVERED')
+      expect(trackerAttrs.events[0].happenedAt).toBe('2024-01-02T14:00:00Z')
     })
   })
 
@@ -609,8 +612,9 @@ describe('transformationManager', () => {
       expect(trackerAttrs.estimatedDeliveryDateTimeStart).toBe('2024-08-21T09:00:00Z')
       expect(trackerAttrs.estimatedDeliveryDateTimeEnd).toBe('2024-08-21T17:00:00Z')
 
-      // Event-level TrackerEventAttributes[] with full field mappings
-      expect(trackerAttrs.events).toEqual(EXPECTED_TRACKER_EVENTS)
+      // Only the latest event from Lugus
+      expect(trackerAttrs.events).toHaveLength(1)
+      expect(trackerAttrs.events[0]).toEqual(EXPECTED_TRACKER_EVENTS[EXPECTED_TRACKER_EVENTS.length - 1])
     })
 
     it('processStatusRequest: looks up subscription and transforms realistic LugusPackageLog[] to TrackerAttributes', async () => {
