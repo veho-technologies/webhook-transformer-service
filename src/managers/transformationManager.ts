@@ -9,7 +9,7 @@ import { trackerSubscriptionDataAccessor } from '../dataAccessors/trackerSubscri
 import { transformDeliveryAttemptDataAccessor } from '../dataAccessors/transformDeliveryAttemptDataAccessor'
 import type { ClientConfig } from '../database'
 import { applyFieldMapping, type FieldMapping } from '../transformers/fieldMappingEngine'
-import type { TrackerAttributes, TrackerEvent } from '../types/shopifyTypes'
+import type { TrackerAttributes, TrackerEventAttributes } from '../types/shopifyTypes'
 
 /**
  * Mirrors hydratr's `HydratrPackageEvent` type. The base `OrderAndPackage`
@@ -43,7 +43,7 @@ function buildTrackerEvents(
   eventLog: object[],
   eventMappings: FieldMapping[],
   statusMap: Record<string, string>
-): TrackerEvent[] {
+): TrackerEventAttributes[] {
   return eventLog
     .map(entry => applyFieldMapping(toRecord(entry), { mappings: eventMappings, statusMap }))
     .filter(mapped => {
@@ -53,7 +53,7 @@ function buildTrackerEvents(
         log.warn(`Skipping event missing required fields (status, happenedAt, message): ${JSON.stringify(mapped)}`)
       }
       return valid
-    }) as unknown as TrackerEvent[]
+    }) as unknown as TrackerEventAttributes[]
 }
 
 function getConfigMappings(config: ClientConfig): {
@@ -102,15 +102,17 @@ export const transformationManager = {
       statusMap,
     })
 
-    const rawEventLog = event.entity.package.eventLog ?? []
-    const events = buildTrackerEvents(rawEventLog, eventLevel, statusMap)
+    const lugusEvents = await lugusAdapter.getPackageEventHistory(trackingNumber)
+    const events = buildTrackerEvents(lugusEvents, eventLevel, statusMap)
 
-    const lastEventTimestamp = rawEventLog.at(-1)?.timestamp ?? ''
+    const lastEventTimestamp = lugusEvents.at(-1)?.timestamp ?? ''
     const idempotencyKey = `${trackingNumber}:${event.operation ?? 'unknown'}:${lastEventTimestamp}`
     const trackerAttributes: TrackerAttributes = {
       ...topLevelMapped,
       trackingNumber,
       carrierId: subscription.carrierId,
+      trackerReferenceId: subscription.trackerReferenceId,
+      idempotencyKey,
       events,
     } as TrackerAttributes
 
@@ -119,14 +121,10 @@ export const transformationManager = {
       trackerReferenceId: subscription.trackerReferenceId,
       idempotencyKey,
       eventCount: events.length,
-      rawEventLogCount: rawEventLog.length,
+      lugusEventCount: lugusEvents.length,
     })
 
-    const result = await shopifyGraphqlAdapter.sendTrackerUpdate(
-      trackerAttributes,
-      subscription.trackerReferenceId,
-      idempotencyKey
-    )
+    const result = await shopifyGraphqlAdapter.sendTrackerUpdate(trackerAttributes)
 
     if (!result.success) {
       log.error(`processEnrichedPackageEvent: sendTrackerUpdate failed`, {
@@ -178,14 +176,13 @@ export const transformationManager = {
     const trackerAttributes: TrackerAttributes = {
       trackingNumber: params.trackingNumber,
       carrierId: subscription.carrierId,
+      trackerReferenceId: subscription.trackerReferenceId,
+      webhookId: params.webhookId,
+      idempotencyKey: params.idempotencyKey,
       events,
     }
 
-    const result = await shopifyGraphqlAdapter.sendTrackerUpdate(
-      trackerAttributes,
-      params.webhookId,
-      params.idempotencyKey
-    )
+    const result = await shopifyGraphqlAdapter.sendTrackerUpdate(trackerAttributes)
 
     await transformDeliveryAttemptDataAccessor.create({
       trackingNumber: params.trackingNumber,
@@ -233,14 +230,12 @@ export const transformationManager = {
     const trackerAttributes: TrackerAttributes = {
       trackingNumber: params.trackingNumber,
       carrierId: subscription.carrierId,
+      trackerReferenceId: subscription.trackerReferenceId,
+      idempotencyKey,
       events,
     }
 
-    const result = await shopifyGraphqlAdapter.sendTrackerUpdate(
-      trackerAttributes,
-      subscription.trackerReferenceId,
-      idempotencyKey
-    )
+    const result = await shopifyGraphqlAdapter.sendTrackerUpdate(trackerAttributes)
 
     await transformDeliveryAttemptDataAccessor.create({
       trackingNumber: params.trackingNumber,

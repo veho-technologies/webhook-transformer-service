@@ -5,12 +5,14 @@ import { ClientError, gql, GraphQLClient } from 'graphql-request'
 import type { ShopifyGraphqlError, TrackerAttributes } from '../types/shopifyTypes'
 
 const TRACKER_UPDATE_MUTATION = gql`
-  mutation trackerUpdate($trackerAttributes: TrackerUpdateInput!, $webhookId: String!, $idempotencyKey: String!) {
-    trackerUpdate(trackerAttributes: $trackerAttributes, webhookId: $webhookId, idempotencyKey: $idempotencyKey) {
-      userErrors {
+  mutation trackerUpdate($input: TrackerAttributes!) {
+    trackerUpdate(input: $input) {
+      errors {
+        code
         field
         message
       }
+      idempotencyKey
     }
   }
 `
@@ -22,7 +24,8 @@ export interface ShopifyAdapterResult {
 
 interface TrackerUpdateResponse {
   trackerUpdate: {
-    userErrors: ShopifyGraphqlError[]
+    errors: ShopifyGraphqlError[]
+    idempotencyKey: string | null
   }
 }
 
@@ -69,40 +72,52 @@ function computeHmac(body: string, secret: string): string {
   return createHmac('sha256', secret).update(body, 'utf8').digest('base64')
 }
 
-function buildClient(): GraphQLClient {
-  return new GraphQLClient(process.env.SHOPIFY_API_URL!)
+function buildClient(secret: string): GraphQLClient {
+  return new GraphQLClient(process.env.SHOPIFY_API_URL!, {
+    requestMiddleware: request => {
+      const body = request.body as string
+      const hmac = computeHmac(body, secret)
+      const headers = new Headers(request.headers)
+      headers.set('X-Shopify-Hmac-SHA256', hmac)
+      headers.set('X-Shopify-App-Id', process.env.SHOPIFY_APP_ID!)
+      return { ...request, headers }
+    },
+  })
 }
 
 export const shopifyGraphqlAdapter = {
-  async sendTrackerUpdate(
-    trackerAttributes: TrackerAttributes,
-    webhookId: string,
-    idempotencyKey: string
-  ): Promise<ShopifyAdapterResult> {
-    const client = buildClient()
+  async sendTrackerUpdate(input: TrackerAttributes): Promise<ShopifyAdapterResult> {
     const secret = await getHmacSecret()
+    const client = buildClient(secret)
 
-    const variables = { trackerAttributes, webhookId, idempotencyKey }
-    const body = JSON.stringify({ query: TRACKER_UPDATE_MUTATION, variables })
-    const hmac = computeHmac(body, secret)
+    // Shopify requires `territory` on every event. Default to 'US' since Veho
+    // only operates domestically and upstream data doesn't always include it.
+    const normalizedInput: TrackerAttributes = {
+      ...input,
+      events: input.events.map(event => ({
+        ...event,
+        territory: event.territory || 'US',
+      })),
+    }
+
+    log.debug('sendTrackerUpdate: payload', {
+      trackerReferenceId: normalizedInput.trackerReferenceId,
+      idempotencyKey: normalizedInput.idempotencyKey,
+      trackingNumber: normalizedInput.trackingNumber,
+      eventCount: normalizedInput.events.length,
+      input: normalizedInput,
+    })
 
     let data: TrackerUpdateResponse
 
     try {
-      data = await client.request<TrackerUpdateResponse>({
-        document: TRACKER_UPDATE_MUTATION,
-        variables,
-        requestHeaders: {
-          'X-Shopify-Hmac-SHA256': hmac,
-          'X-Shopify-App-Id': process.env.SHOPIFY_APP_ID!,
-        },
-      })
+      data = await client.request<TrackerUpdateResponse>(TRACKER_UPDATE_MUTATION, { input: normalizedInput })
     } catch (err) {
       if (err instanceof ClientError) {
         const message = err.response.errors?.map(e => e.message).join('; ') ?? err.message
         log.error(`sendTrackerUpdate: GraphQL client error`, {
-          webhookId,
-          idempotencyKey,
+          trackerReferenceId: input.trackerReferenceId,
+          idempotencyKey: input.idempotencyKey,
           message,
           statusCode: err.response.status,
           errors: err.response.errors,
@@ -112,8 +127,8 @@ export const shopifyGraphqlAdapter = {
       }
       const message = err instanceof Error ? err.message : String(err)
       log.error(`sendTrackerUpdate: unexpected error`, {
-        webhookId,
-        idempotencyKey,
+        trackerReferenceId: input.trackerReferenceId,
+        idempotencyKey: input.idempotencyKey,
         message,
         stack: err instanceof Error ? err.stack : undefined,
         error: err,
@@ -121,14 +136,14 @@ export const shopifyGraphqlAdapter = {
       return { success: false, errors: [{ field: 'http', message }] }
     }
 
-    const userErrors = data.trackerUpdate?.userErrors ?? []
-    if (userErrors.length > 0) {
-      log.error(`sendTrackerUpdate: Shopify userErrors returned`, {
-        webhookId,
-        idempotencyKey,
-        userErrors,
+    const errors = data.trackerUpdate?.errors ?? []
+    if (errors.length > 0) {
+      log.error(`sendTrackerUpdate: Shopify errors returned`, {
+        trackerReferenceId: input.trackerReferenceId,
+        idempotencyKey: input.idempotencyKey,
+        errors,
       })
-      return { success: false, errors: userErrors }
+      return { success: false, errors }
     }
 
     return { success: true }
