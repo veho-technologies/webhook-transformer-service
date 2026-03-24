@@ -5,6 +5,7 @@ import { AuthorizationType } from 'aws-cdk-lib/aws-apigateway'
 import { AttributeType } from 'aws-cdk-lib/aws-dynamodb'
 import { EventBus } from 'aws-cdk-lib/aws-events'
 import { ManagedPolicy } from 'aws-cdk-lib/aws-iam'
+import { Secret } from 'aws-cdk-lib/aws-secretsmanager'
 import { Construct } from 'constructs'
 
 export interface WebhookTransformerStackProps extends VehoStackProps {
@@ -62,6 +63,13 @@ export class WebhookTransformerStack extends VehoStack {
 
     const allTables = [this.clientConfigTable, this.trackerSubscriptionTable, this.transformDeliveryAttemptTable]
 
+    // ── Secrets ─────────────────────────────────────────────────────────
+
+    const shopifyHmacSecret = new Secret(this, 'ShopifyHmacSecret', {
+      secretName: 'webhook-transformer/shopify-HMAC-secret',
+      description: 'Shopify HMAC secret for Shipping Partner Platform authentication',
+    })
+
     // ── Shared Lambda props ──────────────────────────────────────────────
 
     const sharedConsumerLambdaProps: NodejsFunctionProps = {
@@ -71,9 +79,15 @@ export class WebhookTransformerStack extends VehoStack {
         TRACKER_SUBSCRIPTION_TABLE_NAME: this.trackerSubscriptionTable.tableName,
         TRANSFORM_DELIVERY_ATTEMPT_TABLE_NAME: this.transformDeliveryAttemptTable.tableName,
         MERGED_API_URL: mergedApiUrl,
+        SHOPIFY_API_URL: 'https://shipping.shopifysvc.com/partners/2026-01/graphql',
+        SHOPIFY_APP_ID: '330997465089',
+        SHOPIFY_HMAC_SECRET_NAME: shopifyHmacSecret.secretName,
       },
       dynamoTables: allTables,
       managedPolicies: [mergedApiReadPolicy],
+      secretsCacheOptions: {
+        secrets: [shopifyHmacSecret],
+      },
     }
 
     const sharedApiLambdaProps: NodejsFunctionProps = {

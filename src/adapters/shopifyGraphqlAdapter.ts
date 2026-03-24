@@ -1,4 +1,5 @@
 import { log } from '@veho/observability-sdk'
+import { createHmac } from 'crypto'
 import { ClientError, gql, GraphQLClient } from 'graphql-request'
 
 import type { ShopifyGraphqlError, TrackerAttributes } from '../types/shopifyTypes'
@@ -25,10 +26,51 @@ interface TrackerUpdateResponse {
   }
 }
 
-function buildClient(): GraphQLClient {
-  return new GraphQLClient(process.env.SHOPIFY_API_URL!, {
-    headers: { 'X-Shopify-Access-Token': process.env.SHOPIFY_ACCESS_TOKEN! },
+// ── Secret fetching (same pattern as anansi) ────────────────────────────────
+
+let cachedHmacSecret: string | undefined
+
+async function fetchSecretFromCache(secretId: string): Promise<string> {
+  const port = process.env.PARAMETERS_SECRETS_EXTENSION_HTTP_PORT ?? '2773'
+  const url = `http://localhost:${port}/secretsmanager/get?secretId=${encodeURIComponent(secretId)}`
+
+  const response = await fetch(url, {
+    headers: { 'X-Aws-Parameters-Secrets-Token': process.env.AWS_SESSION_TOKEN! },
   })
+
+  const data = (await response.json()) as { SecretString: string }
+  return data.SecretString
+}
+
+async function getHmacSecret(): Promise<string> {
+  if (cachedHmacSecret) return cachedHmacSecret
+
+  if (process.env.SHOPIFY_HMAC_SECRET) {
+    cachedHmacSecret = process.env.SHOPIFY_HMAC_SECRET
+    return cachedHmacSecret
+  }
+
+  const secretName = process.env.SHOPIFY_HMAC_SECRET_NAME
+  if (!secretName) {
+    throw new Error('Neither SHOPIFY_HMAC_SECRET nor SHOPIFY_HMAC_SECRET_NAME is set')
+  }
+
+  cachedHmacSecret = await fetchSecretFromCache(secretName)
+  return cachedHmacSecret
+}
+
+export function resetCachedHmacSecret(): void {
+  cachedHmacSecret = undefined
+}
+
+// ── Client + HMAC signing ───────────────────────────────────────────────────
+
+function computeHmac(body: string, secret: string): string {
+  return createHmac('sha256', secret).update(body, 'utf8').digest('base64')
+}
+
+function buildClient(): GraphQLClient {
+  return new GraphQLClient(process.env.SHOPIFY_API_URL!)
 }
 
 export const shopifyGraphqlAdapter = {
@@ -38,14 +80,22 @@ export const shopifyGraphqlAdapter = {
     idempotencyKey: string
   ): Promise<ShopifyAdapterResult> {
     const client = buildClient()
+    const secret = await getHmacSecret()
+
+    const variables = { trackerAttributes, webhookId, idempotencyKey }
+    const body = JSON.stringify({ query: TRACKER_UPDATE_MUTATION, variables })
+    const hmac = computeHmac(body, secret)
 
     let data: TrackerUpdateResponse
 
     try {
-      data = await client.request<TrackerUpdateResponse>(TRACKER_UPDATE_MUTATION, {
-        trackerAttributes,
-        webhookId,
-        idempotencyKey,
+      data = await client.request<TrackerUpdateResponse>({
+        document: TRACKER_UPDATE_MUTATION,
+        variables,
+        requestHeaders: {
+          'X-Shopify-Hmac-SHA256': hmac,
+          'X-Shopify-App-Id': process.env.SHOPIFY_APP_ID!,
+        },
       })
     } catch (err) {
       if (err instanceof ClientError) {

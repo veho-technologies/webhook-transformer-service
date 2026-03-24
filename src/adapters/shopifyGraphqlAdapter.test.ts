@@ -2,7 +2,7 @@ import { GraphQLError } from 'graphql'
 import { ClientError, GraphQLClient } from 'graphql-request'
 
 import type { TrackerAttributes } from '../types/shopifyTypes'
-import { shopifyGraphqlAdapter } from './shopifyGraphqlAdapter'
+import { resetCachedHmacSecret, shopifyGraphqlAdapter } from './shopifyGraphqlAdapter'
 
 jest.mock('graphql-request', () => {
   const actual = jest.requireActual('graphql-request')
@@ -32,13 +32,16 @@ const SAMPLE_ATTRIBUTES: TrackerAttributes = {
 describe('shopifyGraphqlAdapter.sendTrackerUpdate', () => {
   beforeEach(() => {
     process.env.SHOPIFY_API_URL = 'https://shopify.example.com/graphql'
-    process.env.SHOPIFY_ACCESS_TOKEN = 'test-token'
+    process.env.SHOPIFY_HMAC_SECRET = 'test-secret'
+    process.env.SHOPIFY_APP_ID = '123456'
+    resetCachedHmacSecret()
     jest.clearAllMocks()
   })
 
   afterEach(() => {
     delete process.env.SHOPIFY_API_URL
-    delete process.env.SHOPIFY_ACCESS_TOKEN
+    delete process.env.SHOPIFY_HMAC_SECRET
+    delete process.env.SHOPIFY_APP_ID
   })
 
   it('returns success: true on a successful GraphQL response', async () => {
@@ -85,27 +88,30 @@ describe('shopifyGraphqlAdapter.sendTrackerUpdate', () => {
     expect(result.errors?.[0].message).toContain('ECONNREFUSED')
   })
 
-  it('creates client with correct URL and headers', async () => {
+  it('creates client with correct URL', async () => {
     mockRequest.mockResolvedValue({ trackerUpdate: { userErrors: [] } })
 
     await shopifyGraphqlAdapter.sendTrackerUpdate(SAMPLE_ATTRIBUTES, 'wh-id', 'idem-key')
 
-    expect(GraphQLClient).toHaveBeenCalledWith('https://shopify.example.com/graphql', {
-      headers: { 'X-Shopify-Access-Token': 'test-token' },
-    })
+    expect(GraphQLClient).toHaveBeenCalledWith('https://shopify.example.com/graphql')
   })
 
-  it('passes variables correctly to request', async () => {
+  it('sends HMAC and App ID headers per request', async () => {
     mockRequest.mockResolvedValue({ trackerUpdate: { userErrors: [] } })
 
     await shopifyGraphqlAdapter.sendTrackerUpdate(SAMPLE_ATTRIBUTES, 'wh-id', 'idem-key')
 
     expect(mockRequest).toHaveBeenCalledWith(
-      expect.anything(),
       expect.objectContaining({
-        trackerAttributes: SAMPLE_ATTRIBUTES,
-        webhookId: 'wh-id',
-        idempotencyKey: 'idem-key',
+        variables: expect.objectContaining({
+          trackerAttributes: SAMPLE_ATTRIBUTES,
+          webhookId: 'wh-id',
+          idempotencyKey: 'idem-key',
+        }),
+        requestHeaders: expect.objectContaining({
+          'X-Shopify-Hmac-SHA256': expect.any(String),
+          'X-Shopify-App-Id': '123456',
+        }),
       })
     )
   })
