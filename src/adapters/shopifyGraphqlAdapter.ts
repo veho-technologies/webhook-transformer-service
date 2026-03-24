@@ -90,13 +90,15 @@ export const shopifyGraphqlAdapter = {
     const secret = await getHmacSecret()
     const client = buildClient(secret)
 
-    // Shopify requires `territory` on every event. Default to 'US' since Veho
-    // only operates domestically and upstream data doesn't always include it.
+    // Shopify requires non-empty `territory` and `message` on every event.
+    // Default territory to 'US' since Veho only operates domestically.
+    // Default message to the status value when the carrier doesn't provide one.
     const normalizedInput: TrackerAttributes = {
       ...input,
       events: input.events.map(event => ({
         ...event,
         territory: event.territory || 'US',
+        message: event.message || event.status,
       })),
     }
 
