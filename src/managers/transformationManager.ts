@@ -102,10 +102,10 @@ export const transformationManager = {
       statusMap,
     })
 
-    const rawEventLog = event.entity.package.eventLog ?? []
-    const events = buildTrackerEvents(rawEventLog, eventLevel, statusMap)
+    const lugusEvents = await lugusAdapter.getPackageEventHistory(trackingNumber)
+    const events = buildTrackerEvents(lugusEvents, eventLevel, statusMap)
 
-    const lastEventTimestamp = rawEventLog.at(-1)?.timestamp ?? ''
+    const lastEventTimestamp = lugusEvents.at(-1)?.timestamp ?? ''
     const idempotencyKey = `${trackingNumber}:${event.operation ?? 'unknown'}:${lastEventTimestamp}`
     const trackerAttributes: TrackerAttributes = {
       ...topLevelMapped,
@@ -121,7 +121,7 @@ export const transformationManager = {
       trackerReferenceId: subscription.trackerReferenceId,
       idempotencyKey,
       eventCount: events.length,
-      rawEventLogCount: rawEventLog.length,
+      lugusEventCount: lugusEvents.length,
     })
 
     const result = await shopifyGraphqlAdapter.sendTrackerUpdate(trackerAttributes)

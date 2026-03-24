@@ -115,6 +115,10 @@ describe('transformationManager', () => {
     it('should transform and send to Shopify when subscription and config exist', async () => {
       mockGetByTrackingNumber.mockResolvedValue(MOCK_SUBSCRIPTION)
       mockGetByClientId.mockResolvedValue(MOCK_CONFIG)
+      mockGetPackageEventHistory.mockResolvedValue([
+        { eventType: 'pending', timestamp: '2024-01-01T10:00:00Z', message: 'Package in transit' },
+        { eventType: 'delivered', timestamp: '2024-01-02T14:00:00Z', message: 'Package delivered' },
+      ])
       mockSendTrackerUpdate.mockResolvedValue({ success: true })
       mockCreateAttempt.mockResolvedValue({})
 
@@ -167,6 +171,7 @@ describe('transformationManager', () => {
     it('should log failure when Shopify returns unsuccessful', async () => {
       mockGetByTrackingNumber.mockResolvedValue(MOCK_SUBSCRIPTION)
       mockGetByClientId.mockResolvedValue(MOCK_CONFIG)
+      mockGetPackageEventHistory.mockResolvedValue([])
       mockSendTrackerUpdate.mockResolvedValue({ success: false, errors: [{ field: 'test', message: 'fail' }] })
       mockCreateAttempt.mockResolvedValue({})
 
@@ -191,6 +196,10 @@ describe('transformationManager', () => {
         // only map status — omit happenedAt and message mappings
         fieldMappings: [{ source: 'eventLog.eventType', target: 'status', transform: 'statusMap' }],
       })
+      mockGetPackageEventHistory.mockResolvedValue([
+        { eventType: 'pending', timestamp: '2024-01-01T10:00:00Z', message: 'Package in transit' },
+        { eventType: 'delivered', timestamp: '2024-01-02T14:00:00Z', message: 'Package delivered' },
+      ])
       mockSendTrackerUpdate.mockResolvedValue({ success: true })
       mockCreateAttempt.mockResolvedValue({})
 
@@ -584,6 +593,7 @@ describe('transformationManager', () => {
     it('processEnrichedPackageEvent: transforms realistic EnrichedPackageEvent to TrackerAttributes', async () => {
       mockGetByTrackingNumber.mockResolvedValue(REALISTIC_SUBSCRIPTION)
       mockGetByClientId.mockResolvedValue(REALISTIC_CONFIG)
+      mockGetPackageEventHistory.mockResolvedValue(REALISTIC_LUGUS_EVENTS)
       mockSendTrackerUpdate.mockResolvedValue({ success: true })
       mockCreateAttempt.mockResolvedValue({})
 
