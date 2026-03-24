@@ -100,6 +100,14 @@ export const shopifyGraphqlAdapter = {
       })),
     }
 
+    log.debug('sendTrackerUpdate: payload', {
+      trackerReferenceId: normalizedInput.trackerReferenceId,
+      idempotencyKey: normalizedInput.idempotencyKey,
+      trackingNumber: normalizedInput.trackingNumber,
+      eventCount: normalizedInput.events.length,
+      input: normalizedInput,
+    })
+
     let data: TrackerUpdateResponse
 
     try {
