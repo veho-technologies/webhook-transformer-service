@@ -74,10 +74,20 @@ export const transformationManager = {
       return
     }
 
+    log.debug(`processEnrichedPackageEvent: start`, { trackingNumber, operation: event.operation })
+
     const subscription = await trackerSubscriptionDataAccessor.getByTrackingNumber(trackingNumber)
     if (!subscription) {
+      log.debug(`processEnrichedPackageEvent: no subscription found`, { trackingNumber })
       return
     }
+
+    log.debug(`processEnrichedPackageEvent: subscription found`, {
+      trackingNumber,
+      clientId: subscription.clientId,
+      trackerReferenceId: subscription.trackerReferenceId,
+      carrierId: subscription.carrierId,
+    })
 
     const config = await clientConfigDataAccessor.getByClientId(subscription.clientId)
     if (!config) {
@@ -104,11 +114,34 @@ export const transformationManager = {
       events,
     } as TrackerAttributes
 
+    log.debug(`processEnrichedPackageEvent: sending tracker update`, {
+      trackingNumber,
+      trackerReferenceId: subscription.trackerReferenceId,
+      idempotencyKey,
+      eventCount: events.length,
+      rawEventLogCount: rawEventLog.length,
+    })
+
     const result = await shopifyGraphqlAdapter.sendTrackerUpdate(
       trackerAttributes,
       subscription.trackerReferenceId,
       idempotencyKey
     )
+
+    if (!result.success) {
+      log.error(`processEnrichedPackageEvent: sendTrackerUpdate failed`, {
+        trackingNumber,
+        trackerReferenceId: subscription.trackerReferenceId,
+        idempotencyKey,
+        clientId: subscription.clientId,
+        errors: result.errors,
+      })
+    } else {
+      log.debug(`processEnrichedPackageEvent: sendTrackerUpdate succeeded`, {
+        trackingNumber,
+        idempotencyKey,
+      })
+    }
 
     await transformDeliveryAttemptDataAccessor.create({
       trackingNumber,

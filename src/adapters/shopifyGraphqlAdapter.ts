@@ -1,3 +1,4 @@
+import { log } from '@veho/observability-sdk'
 import { ClientError, gql, GraphQLClient } from 'graphql-request'
 
 import type { ShopifyGraphqlError, TrackerAttributes } from '../types/shopifyTypes'
@@ -49,14 +50,34 @@ export const shopifyGraphqlAdapter = {
     } catch (err) {
       if (err instanceof ClientError) {
         const message = err.response.errors?.map(e => e.message).join('; ') ?? err.message
+        log.error(`sendTrackerUpdate: GraphQL client error`, {
+          webhookId,
+          idempotencyKey,
+          message,
+          statusCode: err.response.status,
+          errors: err.response.errors,
+          stack: err.stack,
+        })
         return { success: false, errors: [{ field: 'graphql', message }] }
       }
       const message = err instanceof Error ? err.message : String(err)
+      log.error(`sendTrackerUpdate: unexpected error`, {
+        webhookId,
+        idempotencyKey,
+        message,
+        stack: err instanceof Error ? err.stack : undefined,
+        error: err,
+      })
       return { success: false, errors: [{ field: 'http', message }] }
     }
 
     const userErrors = data.trackerUpdate?.userErrors ?? []
     if (userErrors.length > 0) {
+      log.error(`sendTrackerUpdate: Shopify userErrors returned`, {
+        webhookId,
+        idempotencyKey,
+        userErrors,
+      })
       return { success: false, errors: userErrors }
     }
 
