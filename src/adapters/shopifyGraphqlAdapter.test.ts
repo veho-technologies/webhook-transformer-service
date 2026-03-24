@@ -17,7 +17,9 @@ const mockRequest = jest.fn()
   () => ({ request: mockRequest }) as unknown as GraphQLClient
 )
 
-const SAMPLE_ATTRIBUTES: TrackerAttributes = {
+const SAMPLE_INPUT: TrackerAttributes = {
+  idempotencyKey: 'idem-key-1',
+  trackerReferenceId: 'ref-001',
   trackingNumber: 'VH1234567890',
   carrierId: 'gid://shopify/DeliveryCarrierService/456',
   events: [
@@ -25,6 +27,7 @@ const SAMPLE_ATTRIBUTES: TrackerAttributes = {
       status: 'OUT_FOR_DELIVERY',
       message: 'Package is out for delivery',
       happenedAt: '2026-02-27T10:00:00.000Z',
+      territory: 'US',
     },
   ],
 }
@@ -45,25 +48,26 @@ describe('shopifyGraphqlAdapter.sendTrackerUpdate', () => {
   })
 
   it('returns success: true on a successful GraphQL response', async () => {
-    mockRequest.mockResolvedValue({ trackerUpdate: { userErrors: [] } })
+    mockRequest.mockResolvedValue({ trackerUpdate: { errors: [], idempotencyKey: 'idem-key-1' } })
 
-    const result = await shopifyGraphqlAdapter.sendTrackerUpdate(SAMPLE_ATTRIBUTES, 'webhook-id-1', 'idem-key-1')
+    const result = await shopifyGraphqlAdapter.sendTrackerUpdate(SAMPLE_INPUT)
 
     expect(result.success).toBe(true)
     expect(result.errors).toBeUndefined()
   })
 
-  it('returns success: false with errors when userErrors is non-empty', async () => {
+  it('returns success: false with errors when errors is non-empty', async () => {
     mockRequest.mockResolvedValue({
       trackerUpdate: {
-        userErrors: [{ field: 'carrierId', message: 'Invalid carrier' }],
+        errors: [{ code: 'INVALID', field: 'carrierId', message: 'Invalid carrier' }],
+        idempotencyKey: null,
       },
     })
 
-    const result = await shopifyGraphqlAdapter.sendTrackerUpdate(SAMPLE_ATTRIBUTES, 'webhook-id-1', 'idem-key-1')
+    const result = await shopifyGraphqlAdapter.sendTrackerUpdate(SAMPLE_INPUT)
 
     expect(result.success).toBe(false)
-    expect(result.errors).toEqual([{ field: 'carrierId', message: 'Invalid carrier' }])
+    expect(result.errors).toEqual([{ code: 'INVALID', field: 'carrierId', message: 'Invalid carrier' }])
   })
 
   it('returns success: false on ClientError (GraphQL-level error)', async () => {
@@ -72,7 +76,7 @@ describe('shopifyGraphqlAdapter.sendTrackerUpdate', () => {
     })
     mockRequest.mockRejectedValue(clientError)
 
-    const result = await shopifyGraphqlAdapter.sendTrackerUpdate(SAMPLE_ATTRIBUTES, 'webhook-id-1', 'idem-key-1')
+    const result = await shopifyGraphqlAdapter.sendTrackerUpdate(SAMPLE_INPUT)
 
     expect(result.success).toBe(false)
     expect(result.errors?.[0].field).toBe('graphql')
@@ -82,33 +86,31 @@ describe('shopifyGraphqlAdapter.sendTrackerUpdate', () => {
   it('returns success: false on network error', async () => {
     mockRequest.mockRejectedValue(new Error('ECONNREFUSED'))
 
-    const result = await shopifyGraphqlAdapter.sendTrackerUpdate(SAMPLE_ATTRIBUTES, 'webhook-id-1', 'idem-key-1')
+    const result = await shopifyGraphqlAdapter.sendTrackerUpdate(SAMPLE_INPUT)
 
     expect(result.success).toBe(false)
     expect(result.errors?.[0].message).toContain('ECONNREFUSED')
   })
 
   it('creates client with correct URL and requestMiddleware', async () => {
-    mockRequest.mockResolvedValue({ trackerUpdate: { userErrors: [] } })
+    mockRequest.mockResolvedValue({ trackerUpdate: { errors: [], idempotencyKey: 'idem-key-1' } })
 
-    await shopifyGraphqlAdapter.sendTrackerUpdate(SAMPLE_ATTRIBUTES, 'wh-id', 'idem-key')
+    await shopifyGraphqlAdapter.sendTrackerUpdate(SAMPLE_INPUT)
 
     expect(GraphQLClient).toHaveBeenCalledWith('https://shopify.example.com/graphql', {
       requestMiddleware: expect.any(Function),
     })
   })
 
-  it('passes variables correctly to request', async () => {
-    mockRequest.mockResolvedValue({ trackerUpdate: { userErrors: [] } })
+  it('passes input variable correctly to request', async () => {
+    mockRequest.mockResolvedValue({ trackerUpdate: { errors: [], idempotencyKey: 'idem-key-1' } })
 
-    await shopifyGraphqlAdapter.sendTrackerUpdate(SAMPLE_ATTRIBUTES, 'wh-id', 'idem-key')
+    await shopifyGraphqlAdapter.sendTrackerUpdate(SAMPLE_INPUT)
 
     expect(mockRequest).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
-        trackerAttributes: SAMPLE_ATTRIBUTES,
-        webhookId: 'wh-id',
-        idempotencyKey: 'idem-key',
+        input: SAMPLE_INPUT,
       })
     )
   })

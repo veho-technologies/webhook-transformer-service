@@ -2,7 +2,7 @@ import { PackageStatusOperations } from '@veho/events'
 import type { LugusPackageLog } from '@veho/merged-api'
 
 import type { ClientConfig, TrackerSubscription } from '../database'
-import type { TrackerAttributes, TrackerEvent } from '../types/shopifyTypes'
+import type { TrackerAttributes, TrackerEventAttributes } from '../types/shopifyTypes'
 import { type EnrichedPackageEventWithEventLog, transformationManager } from './transformationManager'
 
 const mockGetByTrackingNumber = jest.fn()
@@ -125,13 +125,13 @@ describe('transformationManager', () => {
           trackingNumber: 'TRK-123',
           carrierId: 'carrier-789',
           destinationPostalCode: '90210',
+          trackerReferenceId: 'ref-456',
+          idempotencyKey: 'TRK-123:unknown:2024-01-02T14:00:00Z',
           events: [
             { status: 'IN_TRANSIT', happenedAt: '2024-01-01T10:00:00Z', message: 'Package in transit' },
             { status: 'DELIVERED', happenedAt: '2024-01-02T14:00:00Z', message: 'Package delivered' },
-          ] as TrackerEvent[],
-        }),
-        'ref-456',
-        'TRK-123:unknown:2024-01-02T14:00:00Z'
+          ] as TrackerEventAttributes[],
+        })
       )
 
       expect(mockCreateAttempt).toHaveBeenCalledWith(
@@ -239,10 +239,11 @@ describe('transformationManager', () => {
         expect.objectContaining({
           trackingNumber: 'TRK-123',
           carrierId: 'carrier-789',
+          trackerReferenceId: 'ref-456',
+          webhookId: 'webhook-789',
+          idempotencyKey: 'idem-key-001',
           events: [{ status: 'DELIVERED', happenedAt: '2024-01-02T14:00:00Z', message: 'Delivered' }],
-        }),
-        'webhook-789',
-        'idem-key-001'
+        })
       )
     })
 
@@ -323,7 +324,9 @@ describe('transformationManager', () => {
           clientId: 'client-123',
         })
       )
-      expect(mockSendTrackerUpdate).toHaveBeenCalledWith(expect.any(Object), 'ref-456', 'mock-ulid-123')
+      expect(mockSendTrackerUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ trackerReferenceId: 'ref-456', idempotencyKey: 'mock-ulid-123' })
+      )
     })
 
     it('should use persisted trackerReferenceId and carrierId when subscription already existed', async () => {
@@ -341,9 +344,11 @@ describe('transformationManager', () => {
       await transformationManager.processInitialSubscription(params)
 
       expect(mockSendTrackerUpdate).toHaveBeenCalledWith(
-        expect.objectContaining({ carrierId: 'persisted-carrier' }),
-        'persisted-ref',
-        'mock-ulid-123'
+        expect.objectContaining({
+          carrierId: 'persisted-carrier',
+          trackerReferenceId: 'persisted-ref',
+          idempotencyKey: 'mock-ulid-123',
+        })
       )
       expect(mockCreateAttempt).toHaveBeenCalledWith(expect.objectContaining({ trackerReferenceId: 'persisted-ref' }))
     })
@@ -364,10 +369,10 @@ describe('transformationManager', () => {
         expect.objectContaining({
           trackingNumber: 'TRK-123',
           carrierId: 'carrier-789',
+          trackerReferenceId: 'ref-456',
+          idempotencyKey: 'mock-ulid-123',
           events: [{ status: 'OUT_FOR_DELIVERY', happenedAt: '2024-01-02T10:00:00Z', message: 'Out for delivery' }],
-        }),
-        'ref-456',
-        'mock-ulid-123'
+        })
       )
     })
 
@@ -425,7 +430,7 @@ describe('transformationManager', () => {
         { source: 'entity.package.serviceClass', target: 'mailClass', transform: 'statusMap' },
         { source: 'entity.package.deliveryTimeWindow.startsAt', target: 'estimatedDeliveryDateTimeStart' },
         { source: 'entity.package.deliveryTimeWindow.endsAt', target: 'estimatedDeliveryDateTimeEnd' },
-        // Event-level: eventLog entry → TrackerEvent
+        // Event-level: eventLog entry → TrackerEventAttributes
         { source: 'eventLog.eventType', target: 'status', transform: 'statusMap' },
         { source: 'eventLog.timestamp', target: 'happenedAt' },
         { source: 'eventLog.message', target: 'message' },
@@ -546,7 +551,7 @@ describe('transformationManager', () => {
       },
     ]
 
-    const EXPECTED_TRACKER_EVENTS: TrackerEvent[] = [
+    const EXPECTED_TRACKER_EVENTS = [
       {
         status: 'IN_TRANSIT',
         happenedAt: '2024-08-19T14:00:00Z',
@@ -594,7 +599,7 @@ describe('transformationManager', () => {
       expect(trackerAttrs.estimatedDeliveryDateTimeStart).toBe('2024-08-21T09:00:00Z')
       expect(trackerAttrs.estimatedDeliveryDateTimeEnd).toBe('2024-08-21T17:00:00Z')
 
-      // Event-level TrackerEvent[] with full field mappings
+      // Event-level TrackerEventAttributes[] with full field mappings
       expect(trackerAttrs.events).toEqual(EXPECTED_TRACKER_EVENTS)
     })
 
@@ -618,7 +623,13 @@ describe('transformationManager', () => {
       expect(trackerAttrs.events).toEqual(EXPECTED_TRACKER_EVENTS)
 
       // Verbatim pass-through of Shopify webhook params
-      expect(mockSendTrackerUpdate).toHaveBeenCalledWith(expect.any(Object), 'shopify-webhook-abc', 'shopify-idem-xyz')
+      expect(mockSendTrackerUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          trackerReferenceId: 'gid://shopify/Tracker/12345',
+          webhookId: 'shopify-webhook-abc',
+          idempotencyKey: 'shopify-idem-xyz',
+        })
+      )
     })
 
     it('processInitialSubscription: fetches clientId from Lugus and transforms packageLog to TrackerAttributes', async () => {
@@ -643,11 +654,12 @@ describe('transformationManager', () => {
       expect(trackerAttrs.carrierId).toBe('veho-carrier-id')
       expect(trackerAttrs.events).toEqual(EXPECTED_TRACKER_EVENTS)
 
-      // Uses trackerReferenceId as webhookId, generates own idempotencyKey
+      // Uses trackerReferenceId, generates own idempotencyKey
       expect(mockSendTrackerUpdate).toHaveBeenCalledWith(
-        expect.any(Object),
-        'gid://shopify/Tracker/12345',
-        'mock-ulid-123'
+        expect.objectContaining({
+          trackerReferenceId: 'gid://shopify/Tracker/12345',
+          idempotencyKey: 'mock-ulid-123',
+        })
       )
 
       // Subscription created via conditional write with clientId from Lugus

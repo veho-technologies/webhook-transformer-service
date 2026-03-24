@@ -5,12 +5,14 @@ import { ClientError, gql, GraphQLClient } from 'graphql-request'
 import type { ShopifyGraphqlError, TrackerAttributes } from '../types/shopifyTypes'
 
 const TRACKER_UPDATE_MUTATION = gql`
-  mutation trackerUpdate($trackerAttributes: TrackerUpdateInput!, $webhookId: String!, $idempotencyKey: String!) {
-    trackerUpdate(trackerAttributes: $trackerAttributes, webhookId: $webhookId, idempotencyKey: $idempotencyKey) {
-      userErrors {
+  mutation trackerUpdate($input: TrackerAttributes!) {
+    trackerUpdate(input: $input) {
+      errors {
+        code
         field
         message
       }
+      idempotencyKey
     }
   }
 `
@@ -22,7 +24,8 @@ export interface ShopifyAdapterResult {
 
 interface TrackerUpdateResponse {
   trackerUpdate: {
-    userErrors: ShopifyGraphqlError[]
+    errors: ShopifyGraphqlError[]
+    idempotencyKey: string | null
   }
 }
 
@@ -83,28 +86,30 @@ function buildClient(secret: string): GraphQLClient {
 }
 
 export const shopifyGraphqlAdapter = {
-  async sendTrackerUpdate(
-    trackerAttributes: TrackerAttributes,
-    webhookId: string,
-    idempotencyKey: string
-  ): Promise<ShopifyAdapterResult> {
+  async sendTrackerUpdate(input: TrackerAttributes): Promise<ShopifyAdapterResult> {
     const secret = await getHmacSecret()
     const client = buildClient(secret)
+
+    // Shopify requires `territory` on every event. Default to 'US' since Veho
+    // only operates domestically and upstream data doesn't always include it.
+    const normalizedInput: TrackerAttributes = {
+      ...input,
+      events: input.events.map(event => ({
+        ...event,
+        territory: event.territory || 'US',
+      })),
+    }
 
     let data: TrackerUpdateResponse
 
     try {
-      data = await client.request<TrackerUpdateResponse>(TRACKER_UPDATE_MUTATION, {
-        trackerAttributes,
-        webhookId,
-        idempotencyKey,
-      })
+      data = await client.request<TrackerUpdateResponse>(TRACKER_UPDATE_MUTATION, { input: normalizedInput })
     } catch (err) {
       if (err instanceof ClientError) {
         const message = err.response.errors?.map(e => e.message).join('; ') ?? err.message
         log.error(`sendTrackerUpdate: GraphQL client error`, {
-          webhookId,
-          idempotencyKey,
+          trackerReferenceId: input.trackerReferenceId,
+          idempotencyKey: input.idempotencyKey,
           message,
           statusCode: err.response.status,
           errors: err.response.errors,
@@ -114,8 +119,8 @@ export const shopifyGraphqlAdapter = {
       }
       const message = err instanceof Error ? err.message : String(err)
       log.error(`sendTrackerUpdate: unexpected error`, {
-        webhookId,
-        idempotencyKey,
+        trackerReferenceId: input.trackerReferenceId,
+        idempotencyKey: input.idempotencyKey,
         message,
         stack: err instanceof Error ? err.stack : undefined,
         error: err,
@@ -123,14 +128,14 @@ export const shopifyGraphqlAdapter = {
       return { success: false, errors: [{ field: 'http', message }] }
     }
 
-    const userErrors = data.trackerUpdate?.userErrors ?? []
-    if (userErrors.length > 0) {
-      log.error(`sendTrackerUpdate: Shopify userErrors returned`, {
-        webhookId,
-        idempotencyKey,
-        userErrors,
+    const errors = data.trackerUpdate?.errors ?? []
+    if (errors.length > 0) {
+      log.error(`sendTrackerUpdate: Shopify errors returned`, {
+        trackerReferenceId: input.trackerReferenceId,
+        idempotencyKey: input.idempotencyKey,
+        errors,
       })
-      return { success: false, errors: userErrors }
+      return { success: false, errors }
     }
 
     return { success: true }

@@ -1,14 +1,14 @@
 /**
- * Shopify trackerUpdate GraphQL mutation types.
- * Derived from the Shopify Tracking Implementation Guide (beta, closed).
+ * Shopify Shipping Partner Platform — trackerUpdate GraphQL mutation types.
+ * Derived from introspection of the 2026-01 API.
  */
 
-export interface TrackerEvent {
+export interface TrackerEventAttributes {
   status: string
   message: string
   /** ISO8601 with timezone offset */
   happenedAt: string
-  territory?: string
+  territory: string
   zone?: string
   city?: string
   postalCode?: string
@@ -19,13 +19,13 @@ export interface TrackerEvent {
 }
 
 export interface TrackerAttributes {
-  trackingNumber: string
-  carrierId: string
-  events: TrackerEvent[]
-  mailClass?: string
-  idempotencyKey?: string
+  idempotencyKey: string
+  trackerReferenceId: string
+  events: TrackerEventAttributes[]
   webhookId?: string
-  trackerReferenceId?: string
+  carrierId?: string
+  trackingNumber?: string
+  mailClass?: string
   destinationPostalCode?: string
   /** ISO8601 UTC timestamp */
   estimatedDeliveryDateTimeStart?: string
@@ -34,6 +34,7 @@ export interface TrackerAttributes {
 }
 
 export interface ShopifyGraphqlError {
-  field: string
+  code?: string
+  field?: string
   message: string
 }
