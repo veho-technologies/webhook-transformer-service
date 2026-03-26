@@ -1,12 +1,13 @@
 import { getApolloSdk } from '@veho/janus-sdk'
 import { log } from '@veho/observability-sdk'
 
-const getJanusSdk = () =>
-  getApolloSdk({
+const getJanusSdk = () => {
+  return getApolloSdk({
     url: process.env.FACILITY_API_GATEWAY_URL!,
     serviceName: 'webhook-transformer-service',
     sigv4: true,
   })
+}
 
 export const janusAdapter = {
   async getFacilityCoordinates(facilityId: string): Promise<{ lat: number; lng: number } | null> {

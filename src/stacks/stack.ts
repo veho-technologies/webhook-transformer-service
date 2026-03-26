@@ -3,6 +3,7 @@ import { EventNames } from '@veho/event-types'
 import { Duration, Fn, RemovalPolicy, Stack } from 'aws-cdk-lib'
 import { AuthorizationType } from 'aws-cdk-lib/aws-apigateway'
 import { AttributeType } from 'aws-cdk-lib/aws-dynamodb'
+import { IVpc, Vpc } from 'aws-cdk-lib/aws-ec2'
 import { EventBus } from 'aws-cdk-lib/aws-events'
 import { Effect, ManagedPolicy, PolicyStatement } from 'aws-cdk-lib/aws-iam'
 import { Secret } from 'aws-cdk-lib/aws-secretsmanager'
@@ -18,6 +19,7 @@ export class WebhookTransformerStack extends VehoStack {
   public readonly clientConfigTable: TableV2
   public readonly trackerSubscriptionTable: TableV2
   public readonly transformDeliveryAttemptTable: TableV2
+  public readonly vpc: IVpc
 
   constructor(
     scope: Construct,
@@ -78,6 +80,10 @@ export class WebhookTransformerStack extends VehoStack {
 
     // ── VPC Lattice (Janus / Facility API Gateway) ──────────────────────
 
+    this.vpc = Vpc.fromLookup(this, 'core-network', {
+      vpcName: `core-platform-${props.appEnvironment}-${this.account}-${this.region}-network`,
+    })
+
     const facilityApiLatticeArn = StringParameter.valueForStringParameter(
       this,
       '/facility-api-gateway/config/lattice-service-arn'
@@ -112,6 +118,8 @@ export class WebhookTransformerStack extends VehoStack {
       secretsCacheOptions: {
         secrets: [shopifyHmacSecret],
       },
+      vpc: this.vpc,
+      logLevel: 'DEBUG',
     }
 
     const sharedApiLambdaProps: NodejsFunctionProps = {

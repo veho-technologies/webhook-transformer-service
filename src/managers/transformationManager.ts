@@ -131,6 +131,12 @@ export const transformationManager = {
     const events = lastLugusEvent ? buildTrackerEvents([lastLugusEvent], eventLevel, statusMap) : []
 
     // Resolve coordinates: try Lugus event location first, fall back to Janus facility
+
+    log.info('Trying to get coordinates', {
+      locationFromLugus: lastLugusEvent?.location,
+      platformFacilityId: event.entity?.order?.platformFacilityId,
+      facilityId: event.entity?.order?.facilityId,
+    })
     const coordinates = await resolveCoordinates(
       lastLugusEvent?.location,
       event.entity?.order?.platformFacilityId,
@@ -160,6 +166,7 @@ export const transformationManager = {
       idempotencyKey,
       eventCount: events.length,
       lugusEventCount: lugusEvents.length,
+      trackerAttributes: JSON.stringify(trackerAttributes, null, 2),
     })
 
     const result = await shopifyGraphqlAdapter.sendTrackerUpdate(trackerAttributes)
@@ -171,6 +178,7 @@ export const transformationManager = {
         idempotencyKey,
         clientId: subscription.clientId,
         errors: result.errors,
+        trackerAttributes: JSON.stringify(trackerAttributes, null, 2),
       })
     } else {
       log.debug(`processEnrichedPackageEvent: sendTrackerUpdate succeeded`, {
