@@ -2,6 +2,7 @@ import type { EnrichedPackageEvent, OrderAndPackage, Package } from '@veho/event
 import { log } from '@veho/observability-sdk'
 import { ulid } from 'ulid'
 
+import { janusAdapter } from '../adapters/janusAdapter'
 import { lugusAdapter } from '../adapters/lugusAdapter'
 import { shopifyGraphqlAdapter } from '../adapters/shopifyGraphqlAdapter'
 import { clientConfigDataAccessor } from '../dataAccessors/clientConfigDataAccessor'
@@ -66,6 +67,29 @@ function getConfigMappings(config: ClientConfig): {
   }
 }
 
+async function resolveCoordinates(
+  lugusLocation: { lat?: number | null; lng?: number | null } | null | undefined,
+  platformFacilityId: string | null | undefined,
+  facilityId: string | null | undefined
+): Promise<{ lat: number; lng: number } | null> {
+  if (lugusLocation?.lat != null && lugusLocation?.lng != null) {
+    return { lat: lugusLocation.lat, lng: lugusLocation.lng }
+  }
+
+  if (platformFacilityId) {
+    const coords = await janusAdapter.getFacilityCoordinates(platformFacilityId)
+    if (coords) return coords
+  }
+
+  if (facilityId && facilityId !== platformFacilityId) {
+    const coords = await janusAdapter.getFacilityCoordinates(facilityId)
+    if (coords) return coords
+  }
+
+  log.warn('No coordinates available: no facilityId to query Janus')
+  return null
+}
+
 export const transformationManager = {
   async processEnrichedPackageEvent(event: EnrichedPackageEventWithEventLog): Promise<void> {
     const trackingNumber = event.entity?.package?.trackingId
@@ -105,6 +129,19 @@ export const transformationManager = {
     const lugusEvents = await lugusAdapter.getPackageEventHistory(trackingNumber)
     const lastLugusEvent = lugusEvents.at(-1)
     const events = lastLugusEvent ? buildTrackerEvents([lastLugusEvent], eventLevel, statusMap) : []
+
+    // Resolve coordinates: try Lugus event location first, fall back to Janus facility
+    const coordinates = await resolveCoordinates(
+      lastLugusEvent?.location,
+      event.entity?.order?.platformFacilityId,
+      event.entity?.order?.facilityId
+    )
+    if (coordinates) {
+      for (const evt of events) {
+        evt.latitude = coordinates.lat
+        evt.longitude = coordinates.lng
+      }
+    }
 
     const lastEventTimestamp = lastLugusEvent?.timestamp ?? ''
     const idempotencyKey = `${trackingNumber}:${event.operation ?? 'unknown'}:${lastEventTimestamp}`

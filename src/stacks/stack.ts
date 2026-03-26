@@ -4,12 +4,14 @@ import { Duration, Fn, RemovalPolicy, Stack } from 'aws-cdk-lib'
 import { AuthorizationType } from 'aws-cdk-lib/aws-apigateway'
 import { AttributeType } from 'aws-cdk-lib/aws-dynamodb'
 import { EventBus } from 'aws-cdk-lib/aws-events'
-import { ManagedPolicy } from 'aws-cdk-lib/aws-iam'
+import { Effect, ManagedPolicy, PolicyStatement } from 'aws-cdk-lib/aws-iam'
 import { Secret } from 'aws-cdk-lib/aws-secretsmanager'
+import { StringParameter } from 'aws-cdk-lib/aws-ssm'
 import { Construct } from 'constructs'
 
 export interface WebhookTransformerStackProps extends VehoStackProps {
   mergedApiUrl: string
+  facilityApiGatewayUrl: string
 }
 
 export class WebhookTransformerStack extends VehoStack {
@@ -17,7 +19,11 @@ export class WebhookTransformerStack extends VehoStack {
   public readonly trackerSubscriptionTable: TableV2
   public readonly transformDeliveryAttemptTable: TableV2
 
-  constructor(scope: Construct, id: string, { mergedApiUrl, ...props }: WebhookTransformerStackProps) {
+  constructor(
+    scope: Construct,
+    id: string,
+    { mergedApiUrl, facilityApiGatewayUrl, ...props }: WebhookTransformerStackProps
+  ) {
     super(scope, id, props)
 
     // ── IAM ──────────────────────────────────────────────────────────────
@@ -70,6 +76,23 @@ export class WebhookTransformerStack extends VehoStack {
       description: 'Shopify HMAC secret for Shipping Partner Platform authentication',
     })
 
+    // ── VPC Lattice (Janus / Facility API Gateway) ──────────────────────
+
+    const facilityApiLatticeArn = StringParameter.valueForStringParameter(
+      this,
+      '/facility-api-gateway/config/lattice-service-arn'
+    )
+
+    const facilityApiLatticePolicy = new ManagedPolicy(this, 'FacilityApiLatticePolicy', {
+      statements: [
+        new PolicyStatement({
+          effect: Effect.ALLOW,
+          actions: ['vpc-lattice-svcs:Invoke'],
+          resources: [`${facilityApiLatticeArn}/*`],
+        }),
+      ],
+    })
+
     // ── Shared Lambda props ──────────────────────────────────────────────
 
     const sharedConsumerLambdaProps: NodejsFunctionProps = {
@@ -79,12 +102,13 @@ export class WebhookTransformerStack extends VehoStack {
         TRACKER_SUBSCRIPTION_TABLE_NAME: this.trackerSubscriptionTable.tableName,
         TRANSFORM_DELIVERY_ATTEMPT_TABLE_NAME: this.transformDeliveryAttemptTable.tableName,
         MERGED_API_URL: mergedApiUrl,
+        FACILITY_API_GATEWAY_URL: facilityApiGatewayUrl,
         SHOPIFY_API_URL: 'https://shipping.shopifysvc.com/partners/2026-01/graphql',
         SHOPIFY_APP_ID: '330997465089',
         SHOPIFY_HMAC_SECRET_NAME: shopifyHmacSecret.secretName,
       },
       dynamoTables: allTables,
-      managedPolicies: [mergedApiReadPolicy],
+      managedPolicies: [mergedApiReadPolicy, facilityApiLatticePolicy],
       secretsCacheOptions: {
         secrets: [shopifyHmacSecret],
       },
