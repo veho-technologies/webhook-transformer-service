@@ -45,4 +45,10 @@ const project = new GaiaCdkApp({
   ],
 })
 project.gitignore.addPatterns('package-lock.json')
+
+// Override ts-jest transform to use isolatedModules — reduces memory usage in CI
+project.jest!.config.transform = {
+  '^.+\\.[t]sx?$': ['ts-jest', { tsconfig: 'tsconfig.dev.json', isolatedModules: true }],
+}
+
 project.synth()
