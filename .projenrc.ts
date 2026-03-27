@@ -29,13 +29,26 @@ const project = new GaiaCdkApp({
     '@veho/merged-api',
     '@veho/event-types',
     '@veho/lambda-utils',
+    '@veho/janus-sdk@^3.1.1',
   ],
   environments: [
     { name: 'dev', branch: 'dev', usedForDevelopment: true, awsAccountId: '657230704726' },
     { name: 'staging', awsAccountId: '048595045497' },
     { name: 'sandbox', dependsOn: ['staging'], awsAccountId: '050838062588' },
-    { name: 'prod', dependsOn: ['staging'], requireManualDeployApproval: true, enableCiDiffJob: true, awsAccountId: '595208618232' },
+    {
+      name: 'prod',
+      dependsOn: ['staging'],
+      requireManualDeployApproval: true,
+      enableCiDiffJob: true,
+      awsAccountId: '595208618232',
+    },
   ],
 })
 project.gitignore.addPatterns('package-lock.json')
+
+// Override ts-jest transform to use isolatedModules — reduces memory usage in CI
+project.jest!.config.transform = {
+  '^.+\\.[t]sx?$': ['ts-jest', { tsconfig: 'tsconfig.dev.json', isolatedModules: true }],
+}
+
 project.synth()

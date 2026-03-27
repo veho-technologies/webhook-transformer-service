@@ -131,6 +131,11 @@
       "type": "runtime"
     },
     {
+      "name": "@veho/janus-sdk",
+      "version": "^3.1.1",
+      "type": "runtime"
+    },
+    {
       "name": "@veho/lambda-utils",
       "type": "runtime"
     },

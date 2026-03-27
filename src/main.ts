@@ -16,23 +16,28 @@ const envs: Record<
   {
     account: string
     mergedApiUrl: string
+    facilityApiGatewayUrl: string
   }
 > = {
   dev: {
     account: '657230704726',
     mergedApiUrl: 'https://graph.dev.shipveho.com/graphql',
+    facilityApiGatewayUrl: 'https://facility-api-gateway.service.dev.shipveho.com/graphql',
   },
   staging: {
     account: '048595045497',
     mergedApiUrl: 'https://graph.staging.shipveho.com/graphql',
+    facilityApiGatewayUrl: 'https://facility-api-gateway.service.staging.shipveho.com/graphql',
   },
   prod: {
     account: '595208618232',
     mergedApiUrl: 'https://graph.shipveho.com/graphql',
+    facilityApiGatewayUrl: 'https://facility-api-gateway.service.shipveho.com/graphql',
   },
   sandbox: {
     account: '050838062588',
     mergedApiUrl: 'https://graph.sandbox.shipveho.com/graphql',
+    facilityApiGatewayUrl: 'https://facility-api-gateway.service.sandbox.shipveho.com/graphql',
   },
 }
 
@@ -46,6 +51,7 @@ for (const [envName, env] of Object.entries(envs)) {
     env: { region, account: env.account },
     tags: TAGS,
     mergedApiUrl: env.mergedApiUrl,
+    facilityApiGatewayUrl: env.facilityApiGatewayUrl,
   })
 }
 
@@ -60,6 +66,7 @@ if (personalStackName) {
     tags: TAGS,
     isEphemeral: true,
     mergedApiUrl: envs.dev.mergedApiUrl,
+    facilityApiGatewayUrl: envs.dev.facilityApiGatewayUrl,
   })
 }
 
