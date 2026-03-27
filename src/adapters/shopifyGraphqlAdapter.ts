@@ -1,3 +1,4 @@
+import { RetryableError } from '@veho/lambda-utils'
 import { log } from '@veho/observability-sdk'
 import { createHmac } from 'crypto'
 import { ClientError, gql, GraphQLClient } from 'graphql-request'
@@ -16,11 +17,6 @@ const TRACKER_UPDATE_MUTATION = gql`
     }
   }
 `
-
-export interface ShopifyAdapterResult {
-  success: boolean
-  errors?: ShopifyGraphqlError[]
-}
 
 interface TrackerUpdateResponse {
   trackerUpdate: {
@@ -86,7 +82,7 @@ function buildClient(secret: string): GraphQLClient {
 }
 
 export const shopifyGraphqlAdapter = {
-  async sendTrackerUpdate(input: TrackerAttributes): Promise<ShopifyAdapterResult> {
+  async sendTrackerUpdate(input: TrackerAttributes): Promise<void> {
     const secret = await getHmacSecret()
     const client = buildClient(secret)
 
@@ -117,37 +113,38 @@ export const shopifyGraphqlAdapter = {
     } catch (err) {
       if (err instanceof ClientError) {
         const message = err.response.errors?.map(e => e.message).join('; ') ?? err.message
-        log.error(`sendTrackerUpdate: GraphQL client error`, {
+        const context = {
           trackerReferenceId: input.trackerReferenceId,
           idempotencyKey: input.idempotencyKey,
           message,
           statusCode: err.response.status,
           errors: err.response.errors,
-          stack: err.stack,
-        })
-        return { success: false, errors: [{ field: 'graphql', message }] }
+        }
+        if (err.response.status >= 500) {
+          log.warn(`sendTrackerUpdate: GraphQL server error`, context)
+          throw new RetryableError(message)
+        }
+        log.error(`sendTrackerUpdate: GraphQL client error`, context)
+        throw new Error(message)
       }
       const message = err instanceof Error ? err.message : String(err)
-      log.error(`sendTrackerUpdate: unexpected error`, {
+      log.warn(`sendTrackerUpdate: unexpected error`, {
         trackerReferenceId: input.trackerReferenceId,
         idempotencyKey: input.idempotencyKey,
         message,
-        stack: err instanceof Error ? err.stack : undefined,
-        error: err,
       })
-      return { success: false, errors: [{ field: 'http', message }] }
+      throw new RetryableError(message)
     }
 
     const errors = data.trackerUpdate?.errors ?? []
     if (errors.length > 0) {
-      log.error(`sendTrackerUpdate: Shopify errors returned`, {
+      const message = errors.map(e => `${e.field}: ${e.message}`).join('; ')
+      log.error(`sendTrackerUpdate: Shopify business errors`, {
         trackerReferenceId: input.trackerReferenceId,
         idempotencyKey: input.idempotencyKey,
         errors,
       })
-      return { success: false, errors }
+      throw new Error(message)
     }
-
-    return { success: true }
   },
 }

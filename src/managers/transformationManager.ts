@@ -66,12 +66,32 @@ function getConfigMappings(config: ClientConfig): {
   }
 }
 
+async function sendAndRecordDeliveryAttempt(
+  trackerAttributes: TrackerAttributes,
+  attemptInfo: { trackingNumber: string; clientId: string; trackerReferenceId: string; idempotencyKey: string }
+): Promise<void> {
+  let success = false
+  try {
+    await shopifyGraphqlAdapter.sendTrackerUpdate(trackerAttributes)
+    success = true
+  } finally {
+    try {
+      await transformDeliveryAttemptDataAccessor.create({
+        ...attemptInfo,
+        status: success ? 'success' : 'failure',
+        occurredAt: new Date().toISOString(),
+      })
+    } catch (recordErr) {
+      log.error('Failed to record delivery attempt', { error: recordErr })
+    }
+  }
+}
+
 export const transformationManager = {
   async processEnrichedPackageEvent(event: EnrichedPackageEventWithEventLog): Promise<void> {
     const trackingNumber = event.entity?.package?.trackingId
     if (!trackingNumber) {
-      log.warn('Enriched package event missing trackingId — skipping')
-      return
+      throw new Error('Enriched package event missing trackingId')
     }
 
     log.debug(`processEnrichedPackageEvent: start`, { trackingNumber, operation: event.operation })
@@ -91,8 +111,7 @@ export const transformationManager = {
 
     const config = await clientConfigDataAccessor.getByClientId(subscription.clientId)
     if (!config) {
-      log.warn(`No client config found for clientId: ${subscription.clientId}`)
-      return
+      throw new Error(`No client config found for clientId: ${subscription.clientId}`)
     }
 
     const { fieldMappings, statusMap } = getConfigMappings(config)
@@ -125,30 +144,11 @@ export const transformationManager = {
       lugusEventCount: lugusEvents.length,
     })
 
-    const result = await shopifyGraphqlAdapter.sendTrackerUpdate(trackerAttributes)
-
-    if (!result.success) {
-      log.error(`processEnrichedPackageEvent: sendTrackerUpdate failed`, {
-        trackingNumber,
-        trackerReferenceId: subscription.trackerReferenceId,
-        idempotencyKey,
-        clientId: subscription.clientId,
-        errors: result.errors,
-      })
-    } else {
-      log.debug(`processEnrichedPackageEvent: sendTrackerUpdate succeeded`, {
-        trackingNumber,
-        idempotencyKey,
-      })
-    }
-
-    await transformDeliveryAttemptDataAccessor.create({
+    await sendAndRecordDeliveryAttempt(trackerAttributes, {
       trackingNumber,
       clientId: subscription.clientId,
       trackerReferenceId: subscription.trackerReferenceId,
-      status: result.success ? 'success' : 'failure',
       idempotencyKey,
-      occurredAt: new Date().toISOString(),
     })
   },
 
@@ -165,8 +165,7 @@ export const transformationManager = {
 
     const config = await clientConfigDataAccessor.getByClientId(subscription.clientId)
     if (!config) {
-      log.warn(`No client config found for clientId: ${subscription.clientId}`)
-      return
+      throw new Error(`No client config found for clientId: ${subscription.clientId}`)
     }
 
     const { fieldMappings, statusMap } = getConfigMappings(config)
@@ -183,15 +182,11 @@ export const transformationManager = {
       events,
     }
 
-    const result = await shopifyGraphqlAdapter.sendTrackerUpdate(trackerAttributes)
-
-    await transformDeliveryAttemptDataAccessor.create({
+    await sendAndRecordDeliveryAttempt(trackerAttributes, {
       trackingNumber: params.trackingNumber,
       clientId: subscription.clientId,
       trackerReferenceId: subscription.trackerReferenceId,
-      status: result.success ? 'success' : 'failure',
       idempotencyKey: params.idempotencyKey,
-      occurredAt: new Date().toISOString(),
     })
   },
 
@@ -202,8 +197,7 @@ export const transformationManager = {
   }): Promise<void> {
     const { clientId, packageLog } = await lugusAdapter.getPackageWithHistory(params.trackingNumber)
     if (!clientId) {
-      log.warn(`No clientId found in Lugus for trackingNumber: ${params.trackingNumber}`)
-      return
+      throw new Error(`No clientId found in Lugus for trackingNumber: ${params.trackingNumber}`)
     }
 
     const now = new Date()
@@ -219,8 +213,7 @@ export const transformationManager = {
 
     const config = await clientConfigDataAccessor.getByClientId(clientId)
     if (!config) {
-      log.warn(`No client config found for clientId: ${clientId}`)
-      return
+      throw new Error(`No client config found for clientId: ${clientId}`)
     }
 
     const { fieldMappings, statusMap } = getConfigMappings(config)
@@ -236,15 +229,11 @@ export const transformationManager = {
       events,
     }
 
-    const result = await shopifyGraphqlAdapter.sendTrackerUpdate(trackerAttributes)
-
-    await transformDeliveryAttemptDataAccessor.create({
+    await sendAndRecordDeliveryAttempt(trackerAttributes, {
       trackingNumber: params.trackingNumber,
       clientId,
       trackerReferenceId: subscription.trackerReferenceId,
-      status: result.success ? 'success' : 'failure',
       idempotencyKey,
-      occurredAt: new Date().toISOString(),
     })
   },
 }

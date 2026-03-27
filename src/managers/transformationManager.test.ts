@@ -119,7 +119,7 @@ describe('transformationManager', () => {
         { eventType: 'pending', timestamp: '2024-01-01T10:00:00Z', message: 'Package in transit' },
         { eventType: 'delivered', timestamp: '2024-01-02T14:00:00Z', message: 'Package delivered' },
       ])
-      mockSendTrackerUpdate.mockResolvedValue({ success: true })
+      mockSendTrackerUpdate.mockResolvedValue(undefined)
       mockCreateAttempt.mockResolvedValue({})
 
       await transformationManager.processEnrichedPackageEvent(SAMPLE_ENRICHED_EVENT)
@@ -157,32 +157,38 @@ describe('transformationManager', () => {
       expect(mockCreateAttempt).not.toHaveBeenCalled()
     })
 
-    it('should skip when no config exists', async () => {
+    it('should throw when no config exists', async () => {
       mockGetByTrackingNumber.mockResolvedValue(MOCK_SUBSCRIPTION)
       mockGetByClientId.mockResolvedValue(undefined)
 
-      await transformationManager.processEnrichedPackageEvent(SAMPLE_ENRICHED_EVENT)
+      await expect(transformationManager.processEnrichedPackageEvent(SAMPLE_ENRICHED_EVENT)).rejects.toThrow(
+        'No client config found'
+      )
 
       expect(mockSendTrackerUpdate).not.toHaveBeenCalled()
       expect(mockCreateAttempt).not.toHaveBeenCalled()
     })
 
-    it('should log failure when Shopify returns unsuccessful', async () => {
+    it('should record failure and re-throw when Shopify errors', async () => {
       mockGetByTrackingNumber.mockResolvedValue(MOCK_SUBSCRIPTION)
       mockGetByClientId.mockResolvedValue(MOCK_CONFIG)
       mockGetPackageEventHistory.mockResolvedValue([])
-      mockSendTrackerUpdate.mockResolvedValue({ success: false, errors: [{ field: 'test', message: 'fail' }] })
+      mockSendTrackerUpdate.mockRejectedValue(new Error('Shopify error'))
       mockCreateAttempt.mockResolvedValue({})
 
-      await transformationManager.processEnrichedPackageEvent(SAMPLE_ENRICHED_EVENT)
+      await expect(transformationManager.processEnrichedPackageEvent(SAMPLE_ENRICHED_EVENT)).rejects.toThrow(
+        'Shopify error'
+      )
 
       expect(mockCreateAttempt).toHaveBeenCalledWith(expect.objectContaining({ status: 'failure' }))
     })
 
-    it('should skip when event has no trackingNumber', async () => {
-      await transformationManager.processEnrichedPackageEvent({
-        entity: { package: {}, order: {} },
-      } as unknown as EnrichedPackageEventWithEventLog)
+    it('should throw when event has no trackingNumber', async () => {
+      await expect(
+        transformationManager.processEnrichedPackageEvent({
+          entity: { package: {}, order: {} },
+        } as unknown as EnrichedPackageEventWithEventLog)
+      ).rejects.toThrow('missing trackingId')
 
       expect(mockGetByTrackingNumber).not.toHaveBeenCalled()
       expect(mockSendTrackerUpdate).not.toHaveBeenCalled()
@@ -199,7 +205,7 @@ describe('transformationManager', () => {
         { eventType: 'pending', timestamp: '2024-01-01T10:00:00Z', message: 'Package in transit' },
         { eventType: 'delivered', timestamp: '2024-01-02T14:00:00Z', message: 'Package delivered' },
       ])
-      mockSendTrackerUpdate.mockResolvedValue({ success: true })
+      mockSendTrackerUpdate.mockResolvedValue(undefined)
       mockCreateAttempt.mockResolvedValue({})
 
       await transformationManager.processEnrichedPackageEvent(SAMPLE_ENRICHED_EVENT)
@@ -216,7 +222,7 @@ describe('transformationManager', () => {
         { eventType: 'pending', timestamp: '2024-01-01T10:00:00Z', message: 'Package in transit' },
         { eventType: 'delivered', timestamp: '2024-01-02T14:00:00Z', message: 'Package delivered' },
       ])
-      mockSendTrackerUpdate.mockResolvedValue({ success: true })
+      mockSendTrackerUpdate.mockResolvedValue(undefined)
       mockCreateAttempt.mockResolvedValue({})
 
       await transformationManager.processEnrichedPackageEvent(SAMPLE_ENRICHED_EVENT)
@@ -241,7 +247,7 @@ describe('transformationManager', () => {
       mockGetPackageEventHistory.mockResolvedValue([
         { eventType: 'delivered', timestamp: '2024-01-02T14:00:00Z', message: 'Delivered' },
       ])
-      mockSendTrackerUpdate.mockResolvedValue({ success: true })
+      mockSendTrackerUpdate.mockResolvedValue(undefined)
       mockCreateAttempt.mockResolvedValue({})
 
       await transformationManager.processStatusRequest(params)
@@ -263,7 +269,7 @@ describe('transformationManager', () => {
       mockGetByTrackingNumber.mockResolvedValue(MOCK_SUBSCRIPTION)
       mockGetByClientId.mockResolvedValue(MOCK_CONFIG)
       mockGetPackageEventHistory.mockResolvedValue([])
-      mockSendTrackerUpdate.mockResolvedValue({ success: true })
+      mockSendTrackerUpdate.mockResolvedValue(undefined)
       mockCreateAttempt.mockResolvedValue({})
 
       await transformationManager.processStatusRequest(params)
@@ -275,7 +281,7 @@ describe('transformationManager', () => {
       mockGetByTrackingNumber.mockResolvedValue(MOCK_SUBSCRIPTION)
       mockGetByClientId.mockResolvedValue(MOCK_CONFIG)
       mockGetPackageEventHistory.mockResolvedValue([])
-      mockSendTrackerUpdate.mockResolvedValue({ success: true })
+      mockSendTrackerUpdate.mockResolvedValue(undefined)
       mockCreateAttempt.mockResolvedValue({})
 
       await transformationManager.processStatusRequest(params)
@@ -300,14 +306,26 @@ describe('transformationManager', () => {
       expect(mockSendTrackerUpdate).not.toHaveBeenCalled()
     })
 
-    it('should skip when no config exists', async () => {
+    it('should throw when no config exists', async () => {
       mockGetByTrackingNumber.mockResolvedValue(MOCK_SUBSCRIPTION)
       mockGetByClientId.mockResolvedValue(undefined)
 
-      await transformationManager.processStatusRequest(params)
+      await expect(transformationManager.processStatusRequest(params)).rejects.toThrow('No client config found')
 
       expect(mockGetPackageEventHistory).not.toHaveBeenCalled()
       expect(mockSendTrackerUpdate).not.toHaveBeenCalled()
+    })
+
+    it('should record failure and re-throw when Shopify errors', async () => {
+      mockGetByTrackingNumber.mockResolvedValue(MOCK_SUBSCRIPTION)
+      mockGetByClientId.mockResolvedValue(MOCK_CONFIG)
+      mockGetPackageEventHistory.mockResolvedValue([])
+      mockSendTrackerUpdate.mockRejectedValue(new Error('Shopify error'))
+      mockCreateAttempt.mockResolvedValue({})
+
+      await expect(transformationManager.processStatusRequest(params)).rejects.toThrow('Shopify error')
+
+      expect(mockCreateAttempt).toHaveBeenCalledWith(expect.objectContaining({ status: 'failure' }))
     })
   })
 
@@ -322,7 +340,7 @@ describe('transformationManager', () => {
       mockGetPackageWithHistory.mockResolvedValue({ clientId: 'client-123', packageLog: [] })
       mockCreateIfNotExists.mockResolvedValue(MOCK_SUBSCRIPTION)
       mockGetByClientId.mockResolvedValue(MOCK_CONFIG)
-      mockSendTrackerUpdate.mockResolvedValue({ success: true })
+      mockSendTrackerUpdate.mockResolvedValue(undefined)
       mockCreateAttempt.mockResolvedValue({})
 
       await transformationManager.processInitialSubscription(params)
@@ -350,7 +368,7 @@ describe('transformationManager', () => {
       mockGetPackageWithHistory.mockResolvedValue({ clientId: 'client-123', packageLog: [] })
       mockCreateIfNotExists.mockResolvedValue(existingSubscription)
       mockGetByClientId.mockResolvedValue(MOCK_CONFIG)
-      mockSendTrackerUpdate.mockResolvedValue({ success: true })
+      mockSendTrackerUpdate.mockResolvedValue(undefined)
       mockCreateAttempt.mockResolvedValue({})
 
       await transformationManager.processInitialSubscription(params)
@@ -372,7 +390,7 @@ describe('transformationManager', () => {
       })
       mockCreateIfNotExists.mockResolvedValue(MOCK_SUBSCRIPTION)
       mockGetByClientId.mockResolvedValue(MOCK_CONFIG)
-      mockSendTrackerUpdate.mockResolvedValue({ success: true })
+      mockSendTrackerUpdate.mockResolvedValue(undefined)
       mockCreateAttempt.mockResolvedValue({})
 
       await transformationManager.processInitialSubscription(params)
@@ -392,7 +410,7 @@ describe('transformationManager', () => {
       mockGetPackageWithHistory.mockResolvedValue({ clientId: 'client-123', packageLog: [] })
       mockCreateIfNotExists.mockResolvedValue(MOCK_SUBSCRIPTION)
       mockGetByClientId.mockResolvedValue(MOCK_CONFIG)
-      mockSendTrackerUpdate.mockResolvedValue({ success: true })
+      mockSendTrackerUpdate.mockResolvedValue(undefined)
       mockCreateAttempt.mockResolvedValue({})
 
       await transformationManager.processInitialSubscription(params)
@@ -407,24 +425,38 @@ describe('transformationManager', () => {
       )
     })
 
-    it('should skip when Lugus returns no clientId', async () => {
+    it('should throw when Lugus returns no clientId', async () => {
       mockGetPackageWithHistory.mockResolvedValue({ clientId: null, packageLog: [] })
 
-      await transformationManager.processInitialSubscription(params)
+      await expect(transformationManager.processInitialSubscription(params)).rejects.toThrow(
+        'No clientId found in Lugus'
+      )
 
       expect(mockCreateIfNotExists).not.toHaveBeenCalled()
       expect(mockSendTrackerUpdate).not.toHaveBeenCalled()
     })
 
-    it('should write subscription but skip sending when no config exists', async () => {
+    it('should write subscription but throw when no config exists', async () => {
       mockGetPackageWithHistory.mockResolvedValue({ clientId: 'client-123', packageLog: [] })
       mockCreateIfNotExists.mockResolvedValue(MOCK_SUBSCRIPTION)
       mockGetByClientId.mockResolvedValue(undefined)
 
-      await transformationManager.processInitialSubscription(params)
+      await expect(transformationManager.processInitialSubscription(params)).rejects.toThrow('No client config found')
 
       expect(mockCreateIfNotExists).toHaveBeenCalled()
       expect(mockSendTrackerUpdate).not.toHaveBeenCalled()
+    })
+
+    it('should record failure and re-throw when Shopify errors', async () => {
+      mockGetPackageWithHistory.mockResolvedValue({ clientId: 'client-123', packageLog: [] })
+      mockCreateIfNotExists.mockResolvedValue(MOCK_SUBSCRIPTION)
+      mockGetByClientId.mockResolvedValue(MOCK_CONFIG)
+      mockSendTrackerUpdate.mockRejectedValue(new Error('Shopify error'))
+      mockCreateAttempt.mockResolvedValue({})
+
+      await expect(transformationManager.processInitialSubscription(params)).rejects.toThrow('Shopify error')
+
+      expect(mockCreateAttempt).toHaveBeenCalledWith(expect.objectContaining({ status: 'failure' }))
     })
   })
 
@@ -597,7 +629,7 @@ describe('transformationManager', () => {
       mockGetByTrackingNumber.mockResolvedValue(REALISTIC_SUBSCRIPTION)
       mockGetByClientId.mockResolvedValue(REALISTIC_CONFIG)
       mockGetPackageEventHistory.mockResolvedValue(REALISTIC_LUGUS_EVENTS)
-      mockSendTrackerUpdate.mockResolvedValue({ success: true })
+      mockSendTrackerUpdate.mockResolvedValue(undefined)
       mockCreateAttempt.mockResolvedValue({})
 
       await transformationManager.processEnrichedPackageEvent(REALISTIC_ENRICHED_EVENT)
@@ -621,7 +653,7 @@ describe('transformationManager', () => {
       mockGetByTrackingNumber.mockResolvedValue(REALISTIC_SUBSCRIPTION)
       mockGetByClientId.mockResolvedValue(REALISTIC_CONFIG)
       mockGetPackageEventHistory.mockResolvedValue(REALISTIC_LUGUS_EVENTS)
-      mockSendTrackerUpdate.mockResolvedValue({ success: true })
+      mockSendTrackerUpdate.mockResolvedValue(undefined)
       mockCreateAttempt.mockResolvedValue({})
 
       await transformationManager.processStatusRequest({
@@ -653,7 +685,7 @@ describe('transformationManager', () => {
       })
       mockCreateIfNotExists.mockResolvedValue(REALISTIC_SUBSCRIPTION)
       mockGetByClientId.mockResolvedValue(REALISTIC_CONFIG)
-      mockSendTrackerUpdate.mockResolvedValue({ success: true })
+      mockSendTrackerUpdate.mockResolvedValue(undefined)
       mockCreateAttempt.mockResolvedValue({})
 
       await transformationManager.processInitialSubscription({
