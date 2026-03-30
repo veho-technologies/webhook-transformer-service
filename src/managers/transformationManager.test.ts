@@ -227,9 +227,7 @@ describe('transformationManager', () => {
       }
       mockGetByTrackingNumber.mockResolvedValue(MOCK_SUBSCRIPTION)
       mockGetByClientId.mockResolvedValue(configWithOriginalEventCode)
-      mockGetPackageEventHistory.mockResolvedValue([
-        { eventType: 'delivered', timestamp: '2024-01-02T14:00:00Z' },
-      ])
+      mockGetPackageEventHistory.mockResolvedValue([{ eventType: 'delivered', timestamp: '2024-01-02T14:00:00Z' }])
       mockSendTrackerUpdate.mockResolvedValue({ success: true })
       mockCreateAttempt.mockResolvedValue({})
 
@@ -252,9 +250,7 @@ describe('transformationManager', () => {
       }
       mockGetByTrackingNumber.mockResolvedValue(MOCK_SUBSCRIPTION)
       mockGetByClientId.mockResolvedValue(configWithOriginalEventCode)
-      mockGetPackageEventHistory.mockResolvedValue([
-        { eventType: 'delayed', timestamp: '2024-01-02T14:00:00Z' },
-      ])
+      mockGetPackageEventHistory.mockResolvedValue([{ eventType: 'delayed', timestamp: '2024-01-02T14:00:00Z' }])
       mockSendTrackerUpdate.mockResolvedValue({ success: true })
       mockCreateAttempt.mockResolvedValue({})
 
@@ -275,9 +271,7 @@ describe('transformationManager', () => {
       }
       mockGetByTrackingNumber.mockResolvedValue(MOCK_SUBSCRIPTION)
       mockGetByClientId.mockResolvedValue(configNoOriginalEventCode)
-      mockGetPackageEventHistory.mockResolvedValue([
-        { eventType: 'delivered', timestamp: '2024-01-02T14:00:00Z' },
-      ])
+      mockGetPackageEventHistory.mockResolvedValue([{ eventType: 'delivered', timestamp: '2024-01-02T14:00:00Z' }])
       mockSendTrackerUpdate.mockResolvedValue({ success: true })
       mockCreateAttempt.mockResolvedValue({})
 
