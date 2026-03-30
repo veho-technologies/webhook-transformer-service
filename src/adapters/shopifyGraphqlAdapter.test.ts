@@ -117,6 +117,26 @@ describe('shopifyGraphqlAdapter.sendTrackerUpdate', () => {
       mockRequest.mockResolvedValue({ trackerUpdate: { errors: [], idempotencyKey: 'idem-key-1' } })
     })
 
+    it('should preserve existing non-empty message', async () => {
+      const input: TrackerAttributes = {
+        ...SAMPLE_INPUT,
+        events: [
+          {
+            status: 'OUT_FOR_DELIVERY',
+            message: 'Package is out for delivery',
+            happenedAt: '2026-02-27T10:00:00.000Z',
+            territory: 'US',
+            originalEventCode: 'pickedUpFromVeho',
+          },
+        ],
+      }
+
+      await shopifyGraphqlAdapter.sendTrackerUpdate(input)
+
+      const normalized = mockRequest.mock.calls[0][1].input
+      expect(normalized.events[0].message).toBe('Package is out for delivery')
+    })
+
     it('should resolve message from supplementary map when originalEventCode matches', async () => {
       const input: TrackerAttributes = {
         ...SAMPLE_INPUT,

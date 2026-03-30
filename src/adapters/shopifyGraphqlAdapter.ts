@@ -97,13 +97,14 @@ export const shopifyGraphqlAdapter = {
 
     // Shopify requires non-empty `territory` and `message` on every event.
     // Default territory to 'US' since Veho only operates domestically.
-    // Resolve message: try supplementary map, then Anansi human-readable, then raw status.
+    // Resolve message: keep existing if non-empty, then try supplementary/Anansi, then raw status.
     const normalizedInput: TrackerAttributes = {
       ...input,
       events: input.events.map(event => ({
         ...event,
         territory: event.territory || 'US',
         message:
+          event.message?.trim() ||
           SHOPIFY_SUPPLEMENTARY_EVENT_MESSAGES[event.originalEventCode ?? ''] ||
           getHumanReadablePackageOperationText(event.originalEventCode) ||
           event.status,
