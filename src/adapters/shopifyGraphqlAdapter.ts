@@ -1,8 +1,13 @@
+import { getHumanReadablePackageOperationText } from '@veho/client-api-contract'
 import { log } from '@veho/observability-sdk'
 import { createHmac } from 'crypto'
 import { ClientError, gql, GraphQLClient } from 'graphql-request'
 
-import type { ShopifyGraphqlError, TrackerAttributes } from '../types/shopifyTypes'
+import {
+  SHOPIFY_SUPPLEMENTARY_EVENT_MESSAGES,
+  type ShopifyGraphqlError,
+  type TrackerAttributes,
+} from '../types/shopifyTypes'
 
 const TRACKER_UPDATE_MUTATION = gql`
   mutation trackerUpdate($input: TrackerAttributes!) {
@@ -92,13 +97,17 @@ export const shopifyGraphqlAdapter = {
 
     // Shopify requires non-empty `territory` and `message` on every event.
     // Default territory to 'US' since Veho only operates domestically.
-    // Default message to the status value when the carrier doesn't provide one.
+    // Resolve message: keep existing if non-empty, then try supplementary/Anansi, then raw status.
     const normalizedInput: TrackerAttributes = {
       ...input,
       events: input.events.map(event => ({
         ...event,
         territory: event.territory || 'US',
-        message: event.message || event.status,
+        message:
+          event.message?.trim() ||
+          SHOPIFY_SUPPLEMENTARY_EVENT_MESSAGES[event.originalEventCode ?? ''] ||
+          getHumanReadablePackageOperationText(event.originalEventCode) ||
+          event.status,
       })),
     }
 

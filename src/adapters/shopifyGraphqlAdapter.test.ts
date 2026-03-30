@@ -102,16 +102,138 @@ describe('shopifyGraphqlAdapter.sendTrackerUpdate', () => {
     })
   })
 
-  it('passes input variable correctly to request', async () => {
+  it('passes normalized input variable to request', async () => {
     mockRequest.mockResolvedValue({ trackerUpdate: { errors: [], idempotencyKey: 'idem-key-1' } })
 
     await shopifyGraphqlAdapter.sendTrackerUpdate(SAMPLE_INPUT)
 
-    expect(mockRequest).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({
-        input: SAMPLE_INPUT,
-      })
-    )
+    const calledInput = mockRequest.mock.calls[0][1].input
+    expect(calledInput.trackingNumber).toBe(SAMPLE_INPUT.trackingNumber)
+    expect(calledInput.events[0].territory).toBe('US')
+  })
+
+  describe('message resolution', () => {
+    beforeEach(() => {
+      mockRequest.mockResolvedValue({ trackerUpdate: { errors: [], idempotencyKey: 'idem-key-1' } })
+    })
+
+    it('should preserve existing non-empty message', async () => {
+      const input: TrackerAttributes = {
+        ...SAMPLE_INPUT,
+        events: [
+          {
+            status: 'OUT_FOR_DELIVERY',
+            message: 'Package is out for delivery',
+            happenedAt: '2026-02-27T10:00:00.000Z',
+            territory: 'US',
+            originalEventCode: 'pickedUpFromVeho',
+          },
+        ],
+      }
+
+      await shopifyGraphqlAdapter.sendTrackerUpdate(input)
+
+      const normalized = mockRequest.mock.calls[0][1].input
+      expect(normalized.events[0].message).toBe('Package is out for delivery')
+    })
+
+    it('should resolve message from supplementary map when originalEventCode matches', async () => {
+      const input: TrackerAttributes = {
+        ...SAMPLE_INPUT,
+        events: [
+          {
+            status: 'DELAYED',
+            message: '',
+            happenedAt: '2026-02-27T10:00:00.000Z',
+            territory: 'US',
+            originalEventCode: 'delayed',
+          },
+        ],
+      }
+
+      await shopifyGraphqlAdapter.sendTrackerUpdate(input)
+
+      const normalized = mockRequest.mock.calls[0][1].input
+      expect(normalized.events[0].message).toBe('The package has been delayed')
+    })
+
+    it('should resolve message from Anansi when originalEventCode is known but not in supplementary', async () => {
+      const input: TrackerAttributes = {
+        ...SAMPLE_INPUT,
+        events: [
+          {
+            status: 'IN_TRANSIT',
+            message: '',
+            happenedAt: '2026-02-27T10:00:00.000Z',
+            territory: 'US',
+            originalEventCode: 'droppedOffAtVeho',
+          },
+        ],
+      }
+
+      await shopifyGraphqlAdapter.sendTrackerUpdate(input)
+
+      const normalized = mockRequest.mock.calls[0][1].input
+      expect(normalized.events[0].message).toBe('Package arrived at Veho facility')
+    })
+
+    it('should use supplementary override over Anansi for overridden event codes', async () => {
+      const input: TrackerAttributes = {
+        ...SAMPLE_INPUT,
+        events: [
+          {
+            status: 'IN_TRANSIT',
+            message: '',
+            happenedAt: '2026-02-27T10:00:00.000Z',
+            territory: 'US',
+            originalEventCode: 'pickedUpFromClient',
+          },
+        ],
+      }
+
+      await shopifyGraphqlAdapter.sendTrackerUpdate(input)
+
+      const normalized = mockRequest.mock.calls[0][1].input
+      expect(normalized.events[0].message).toBe('Package left sender facility')
+    })
+
+    it('should fall back to raw status when originalEventCode is unknown', async () => {
+      const input: TrackerAttributes = {
+        ...SAMPLE_INPUT,
+        events: [
+          {
+            status: 'IN_TRANSIT',
+            message: '',
+            happenedAt: '2026-02-27T10:00:00.000Z',
+            territory: 'US',
+            originalEventCode: 'unknownEventCode',
+          },
+        ],
+      }
+
+      await shopifyGraphqlAdapter.sendTrackerUpdate(input)
+
+      const normalized = mockRequest.mock.calls[0][1].input
+      expect(normalized.events[0].message).toBe('IN_TRANSIT')
+    })
+
+    it('should fall back to raw status when no originalEventCode is present', async () => {
+      const input: TrackerAttributes = {
+        ...SAMPLE_INPUT,
+        events: [
+          {
+            status: 'IN_TRANSIT',
+            message: '',
+            happenedAt: '2026-02-27T10:00:00.000Z',
+            territory: 'US',
+          },
+        ],
+      }
+
+      await shopifyGraphqlAdapter.sendTrackerUpdate(input)
+
+      const normalized = mockRequest.mock.calls[0][1].input
+      expect(normalized.events[0].message).toBe('IN_TRANSIT')
+    })
   })
 })

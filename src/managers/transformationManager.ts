@@ -1,3 +1,4 @@
+import { getHumanReadablePackageOperationText } from '@veho/client-api-contract'
 import type { EnrichedPackageEvent, OrderAndPackage, Package } from '@veho/events'
 import { log } from '@veho/observability-sdk'
 import { ulid } from 'ulid'
@@ -10,7 +11,11 @@ import { trackerSubscriptionDataAccessor } from '../dataAccessors/trackerSubscri
 import { transformDeliveryAttemptDataAccessor } from '../dataAccessors/transformDeliveryAttemptDataAccessor'
 import type { ClientConfig } from '../database'
 import { applyFieldMapping, type FieldMapping } from '../transformers/fieldMappingEngine'
-import type { TrackerAttributes, TrackerEventAttributes } from '../types/shopifyTypes'
+import {
+  SHOPIFY_SUPPLEMENTARY_EVENT_MESSAGES,
+  type TrackerAttributes,
+  type TrackerEventAttributes,
+} from '../types/shopifyTypes'
 
 /**
  * Mirrors hydratr's `HydratrPackageEvent` type. The base `OrderAndPackage`
@@ -40,13 +45,32 @@ function toRecord(obj: object): Record<string, unknown> {
   return obj as Record<string, unknown>
 }
 
+function resolveEventMessage(mapped: Record<string, unknown>): string {
+  if (typeof mapped.message === 'string' && mapped.message !== '') {
+    return mapped.message
+  }
+  const eventCode = mapped.originalEventCode as string | undefined
+  if (eventCode) {
+    return (
+      SHOPIFY_SUPPLEMENTARY_EVENT_MESSAGES[eventCode] ||
+      getHumanReadablePackageOperationText(eventCode) ||
+      String(mapped.status ?? '')
+    )
+  }
+  return String(mapped.status ?? '')
+}
+
 function buildTrackerEvents(
   eventLog: object[],
   eventMappings: FieldMapping[],
   statusMap: Record<string, string>
 ): TrackerEventAttributes[] {
   return eventLog
-    .map(entry => applyFieldMapping(toRecord(entry), { mappings: eventMappings, statusMap }))
+    .map(entry => {
+      const mapped = applyFieldMapping(toRecord(entry), { mappings: eventMappings, statusMap })
+      mapped.message = resolveEventMessage(mapped)
+      return mapped
+    })
     .filter(mapped => {
       const valid =
         typeof mapped.status === 'string' && typeof mapped.happenedAt === 'string' && typeof mapped.message === 'string'

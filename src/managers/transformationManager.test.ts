@@ -195,7 +195,7 @@ describe('transformationManager', () => {
       expect(mockSendTrackerUpdate).not.toHaveBeenCalled()
     })
 
-    it('should filter out events missing required fields (status, happenedAt, message)', async () => {
+    it('should filter out events missing required fields (status, happenedAt)', async () => {
       mockGetByTrackingNumber.mockResolvedValue(MOCK_SUBSCRIPTION)
       mockGetByClientId.mockResolvedValue({
         ...MOCK_CONFIG,
@@ -212,8 +212,74 @@ describe('transformationManager', () => {
       await transformationManager.processEnrichedPackageEvent(SAMPLE_ENRICHED_EVENT)
 
       const trackerAttrs = mockSendTrackerUpdate.mock.calls[0][0]
-      // events are missing happenedAt and message → all filtered out
+      // events are missing happenedAt → all filtered out
       expect(trackerAttrs.events).toEqual([])
+    })
+
+    it('should resolve default message from Anansi when eventLog.message is missing', async () => {
+      const configWithOriginalEventCode: ClientConfig = {
+        ...MOCK_CONFIG,
+        fieldMappings: [
+          { source: 'eventLog.eventType', target: 'status', transform: 'statusMap' },
+          { source: 'eventLog.timestamp', target: 'happenedAt' },
+          { source: 'eventLog.eventType', target: 'originalEventCode' },
+        ],
+      }
+      mockGetByTrackingNumber.mockResolvedValue(MOCK_SUBSCRIPTION)
+      mockGetByClientId.mockResolvedValue(configWithOriginalEventCode)
+      mockGetPackageEventHistory.mockResolvedValue([{ eventType: 'delivered', timestamp: '2024-01-02T14:00:00Z' }])
+      mockSendTrackerUpdate.mockResolvedValue({ success: true })
+      mockCreateAttempt.mockResolvedValue({})
+
+      await transformationManager.processEnrichedPackageEvent(SAMPLE_ENRICHED_EVENT)
+
+      const trackerAttrs = mockSendTrackerUpdate.mock.calls[0][0]
+      expect(trackerAttrs.events).toHaveLength(1)
+      expect(trackerAttrs.events[0].message).toBe('Package delivered')
+    })
+
+    it('should resolve supplementary message for event codes not in Anansi', async () => {
+      const configWithOriginalEventCode: ClientConfig = {
+        ...MOCK_CONFIG,
+        fieldMappings: [
+          { source: 'eventLog.eventType', target: 'status', transform: 'statusMap' },
+          { source: 'eventLog.timestamp', target: 'happenedAt' },
+          { source: 'eventLog.eventType', target: 'originalEventCode' },
+        ],
+        statusMap: { ...MOCK_CONFIG.statusMap, delayed: 'DELAYED' },
+      }
+      mockGetByTrackingNumber.mockResolvedValue(MOCK_SUBSCRIPTION)
+      mockGetByClientId.mockResolvedValue(configWithOriginalEventCode)
+      mockGetPackageEventHistory.mockResolvedValue([{ eventType: 'delayed', timestamp: '2024-01-02T14:00:00Z' }])
+      mockSendTrackerUpdate.mockResolvedValue({ success: true })
+      mockCreateAttempt.mockResolvedValue({})
+
+      await transformationManager.processEnrichedPackageEvent(SAMPLE_ENRICHED_EVENT)
+
+      const trackerAttrs = mockSendTrackerUpdate.mock.calls[0][0]
+      expect(trackerAttrs.events).toHaveLength(1)
+      expect(trackerAttrs.events[0].message).toBe('The package has been delayed')
+    })
+
+    it('should fall back to status string when no message source is available', async () => {
+      const configNoOriginalEventCode: ClientConfig = {
+        ...MOCK_CONFIG,
+        fieldMappings: [
+          { source: 'eventLog.eventType', target: 'status', transform: 'statusMap' },
+          { source: 'eventLog.timestamp', target: 'happenedAt' },
+        ],
+      }
+      mockGetByTrackingNumber.mockResolvedValue(MOCK_SUBSCRIPTION)
+      mockGetByClientId.mockResolvedValue(configNoOriginalEventCode)
+      mockGetPackageEventHistory.mockResolvedValue([{ eventType: 'delivered', timestamp: '2024-01-02T14:00:00Z' }])
+      mockSendTrackerUpdate.mockResolvedValue({ success: true })
+      mockCreateAttempt.mockResolvedValue({})
+
+      await transformationManager.processEnrichedPackageEvent(SAMPLE_ENRICHED_EVENT)
+
+      const trackerAttrs = mockSendTrackerUpdate.mock.calls[0][0]
+      expect(trackerAttrs.events).toHaveLength(1)
+      expect(trackerAttrs.events[0].message).toBe('DELIVERED')
     })
 
     it('should inject coordinates from Lugus event location when available', async () => {

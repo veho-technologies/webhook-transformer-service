@@ -30,6 +30,7 @@ const project = new GaiaCdkApp({
     '@veho/event-types',
     '@veho/lambda-utils',
     '@veho/janus-sdk@^3.1.1',
+    '@veho/client-api-contract',
   ],
   environments: [
     { name: 'dev', branch: 'dev', usedForDevelopment: true, awsAccountId: '657230704726' },
