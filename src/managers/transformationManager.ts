@@ -1,7 +1,9 @@
+import { getHumanReadablePackageOperationText } from '@veho/client-api-contract'
 import type { EnrichedPackageEvent, OrderAndPackage, Package } from '@veho/events'
 import { log } from '@veho/observability-sdk'
 import { ulid } from 'ulid'
 
+import { janusAdapter } from '../adapters/janusAdapter'
 import { lugusAdapter } from '../adapters/lugusAdapter'
 import { shopifyGraphqlAdapter } from '../adapters/shopifyGraphqlAdapter'
 import { clientConfigDataAccessor } from '../dataAccessors/clientConfigDataAccessor'
@@ -9,7 +11,11 @@ import { trackerSubscriptionDataAccessor } from '../dataAccessors/trackerSubscri
 import { transformDeliveryAttemptDataAccessor } from '../dataAccessors/transformDeliveryAttemptDataAccessor'
 import type { ClientConfig } from '../database'
 import { applyFieldMapping, type FieldMapping } from '../transformers/fieldMappingEngine'
-import type { TrackerAttributes, TrackerEventAttributes } from '../types/shopifyTypes'
+import {
+  SHOPIFY_SUPPLEMENTARY_EVENT_MESSAGES,
+  type TrackerAttributes,
+  type TrackerEventAttributes,
+} from '../types/shopifyTypes'
 
 /**
  * Mirrors hydratr's `HydratrPackageEvent` type. The base `OrderAndPackage`
@@ -39,13 +45,32 @@ function toRecord(obj: object): Record<string, unknown> {
   return obj as Record<string, unknown>
 }
 
+function resolveEventMessage(mapped: Record<string, unknown>): string {
+  if (typeof mapped.message === 'string' && mapped.message !== '') {
+    return mapped.message
+  }
+  const eventCode = mapped.originalEventCode as string | undefined
+  if (eventCode) {
+    return (
+      SHOPIFY_SUPPLEMENTARY_EVENT_MESSAGES[eventCode] ||
+      getHumanReadablePackageOperationText(eventCode) ||
+      String(mapped.status ?? '')
+    )
+  }
+  return String(mapped.status ?? '')
+}
+
 function buildTrackerEvents(
   eventLog: object[],
   eventMappings: FieldMapping[],
   statusMap: Record<string, string>
 ): TrackerEventAttributes[] {
   return eventLog
-    .map(entry => applyFieldMapping(toRecord(entry), { mappings: eventMappings, statusMap }))
+    .map(entry => {
+      const mapped = applyFieldMapping(toRecord(entry), { mappings: eventMappings, statusMap })
+      mapped.message = resolveEventMessage(mapped)
+      return mapped
+    })
     .filter(mapped => {
       const valid =
         typeof mapped.status === 'string' && typeof mapped.happenedAt === 'string' && typeof mapped.message === 'string'
@@ -87,6 +112,29 @@ async function sendAndRecordDeliveryAttempt(
   }
 }
 
+async function resolveCoordinates(
+  lugusLocation: { lat?: number | null; lng?: number | null } | null | undefined,
+  platformFacilityId: string | null | undefined,
+  facilityId: string | null | undefined
+): Promise<{ lat: number; lng: number } | null> {
+  if (lugusLocation?.lat != null && lugusLocation?.lng != null) {
+    return { lat: lugusLocation.lat, lng: lugusLocation.lng }
+  }
+
+  if (platformFacilityId) {
+    const coords = await janusAdapter.getFacilityCoordinates(platformFacilityId)
+    if (coords) return coords
+  }
+
+  if (facilityId && facilityId !== platformFacilityId) {
+    const coords = await janusAdapter.getFacilityCoordinates(facilityId)
+    if (coords) return coords
+  }
+
+  log.warn('No coordinates available: no facilityId to query Janus')
+  return null
+}
+
 export const transformationManager = {
   async processEnrichedPackageEvent(event: EnrichedPackageEventWithEventLog): Promise<void> {
     const trackingNumber = event.entity?.package?.trackingId
@@ -125,6 +173,25 @@ export const transformationManager = {
     const lastLugusEvent = lugusEvents.at(-1)
     const events = lastLugusEvent ? buildTrackerEvents([lastLugusEvent], eventLevel, statusMap) : []
 
+    // Resolve coordinates: try Lugus event location first, fall back to Janus facility
+
+    log.info('Trying to get coordinates', {
+      locationFromLugus: lastLugusEvent?.location,
+      platformFacilityId: event.entity?.order?.platformFacilityId,
+      facilityId: event.entity?.order?.facilityId,
+    })
+    const coordinates = await resolveCoordinates(
+      lastLugusEvent?.location,
+      event.entity?.order?.platformFacilityId,
+      event.entity?.order?.facilityId
+    )
+    if (coordinates) {
+      for (const evt of events) {
+        evt.latitude = coordinates.lat
+        evt.longitude = coordinates.lng
+      }
+    }
+
     const lastEventTimestamp = lastLugusEvent?.timestamp ?? ''
     const idempotencyKey = `${trackingNumber}:${event.operation ?? 'unknown'}:${lastEventTimestamp}`
     const trackerAttributes: TrackerAttributes = {
@@ -142,6 +209,7 @@ export const transformationManager = {
       idempotencyKey,
       eventCount: events.length,
       lugusEventCount: lugusEvents.length,
+      trackerAttributes: JSON.stringify(trackerAttributes, null, 2),
     })
 
     await sendAndRecordDeliveryAttempt(trackerAttributes, {

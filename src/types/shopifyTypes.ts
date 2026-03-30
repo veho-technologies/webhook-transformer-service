@@ -38,3 +38,28 @@ export interface ShopifyGraphqlError {
   field?: string
   message: string
 }
+
+/**
+ * Supplementary event messages for Shopify tracker events.
+ * - Overrides: Anansi messages where wording doesn't fit Shopify consumer context
+ * - Gaps: Event codes from the Veho→Shopify mapping spreadsheet not covered by Anansi
+ *
+ * Checked BEFORE @veho/client-api-contract's getHumanReadablePackageOperationText()
+ * so overrides take priority.
+ *
+ * @see https://linear.app/veho/issue/CLI-3032
+ */
+export const SHOPIFY_SUPPLEMENTARY_EVENT_MESSAGES: Record<string, string> = {
+  // Overrides ("shipper" → "sender", "shipment" → "package")
+  pickedUpFromClient: 'Package left sender facility',
+  returnedToClient: 'Package returned to sender',
+  pendingReturnToClient: 'Package pending return to sender',
+  // Event codes not in Anansi
+  PackageCreatedByClient: 'Label created',
+  PackageImageAddedAsProofOfService: 'Package delivered',
+  PackageHadDeliveryIssue: 'There was an issue with the delivery',
+  delayed: 'The package has been delayed',
+  OrderAddressCouldNotBeNormalized: 'The package address is incorrect',
+  PackageReturnedToVehoByDriverWithoutDeliveryIssue: 'Package returned to Veho',
+  PackageReturnedToVehoByDriverAfterDeliveryIssue: 'Package returned to Veho',
+}
