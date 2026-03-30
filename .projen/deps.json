@@ -123,6 +123,10 @@
       "type": "runtime"
     },
     {
+      "name": "@veho/client-api-contract",
+      "type": "runtime"
+    },
+    {
       "name": "@veho/event-types",
       "type": "runtime"
     },

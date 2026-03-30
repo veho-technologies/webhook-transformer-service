@@ -694,13 +694,13 @@
       },
       "steps": [
         {
-          "exec": "pnpm dlx npm-check-updates@18 --upgrade --target=minor --peer --no-deprecated --dep=dev,peer,prod,optional --filter=@types/aws-lambda,@types/jest,@veho/dx-sdk,@veho/gaia-projen,esbuild-visualizer,eslint-config-prettier,eslint-import-resolver-typescript,eslint-plugin-import,eslint-plugin-simple-import-sort,jest,lambda-live-debugger,projen,ts-jest,ts-node,typescript,@aws-sdk/client-dynamodb,@aws-sdk/lib-dynamodb,@veho/cdk,@veho/event-types,@veho/events,@veho/lambda-utils,@veho/merged-api,@veho/observability-sdk,aws-sigv4-fetch,aws-xray-sdk-core,dynamodb-toolbox,graphql,graphql-request,ulid"
+          "exec": "pnpm dlx npm-check-updates@18 --upgrade --target=minor --peer --no-deprecated --dep=dev,peer,prod,optional --filter=@types/aws-lambda,@types/jest,@veho/dx-sdk,@veho/gaia-projen,esbuild-visualizer,eslint-config-prettier,eslint-import-resolver-typescript,eslint-plugin-import,eslint-plugin-simple-import-sort,jest,lambda-live-debugger,projen,ts-jest,ts-node,typescript,@aws-sdk/client-dynamodb,@aws-sdk/lib-dynamodb,@veho/cdk,@veho/client-api-contract,@veho/event-types,@veho/events,@veho/lambda-utils,@veho/merged-api,@veho/observability-sdk,aws-sigv4-fetch,aws-xray-sdk-core,dynamodb-toolbox,graphql,graphql-request,ulid"
         },
         {
           "exec": "pnpm i --no-frozen-lockfile"
         },
         {
-          "exec": "pnpm update @types/aws-lambda @types/jest @types/node @typescript-eslint/eslint-plugin @typescript-eslint/parser @veho/dx-sdk @veho/gaia-projen aws-cdk esbuild-visualizer esbuild eslint-config-prettier eslint-import-resolver-typescript eslint-plugin-import eslint-plugin-prettier eslint-plugin-simple-import-sort eslint husky jest jest-junit lambda-live-debugger prettier projen ts-jest ts-node typescript @aws-sdk/client-dynamodb @aws-sdk/lib-dynamodb @veho/cdk @veho/event-types @veho/events @veho/janus-sdk @veho/lambda-utils @veho/merged-api @veho/observability-sdk aws-cdk-lib aws-sigv4-fetch aws-xray-sdk-core constructs dynamodb-toolbox graphql graphql-request ulid"
+          "exec": "pnpm update @types/aws-lambda @types/jest @types/node @typescript-eslint/eslint-plugin @typescript-eslint/parser @veho/dx-sdk @veho/gaia-projen aws-cdk esbuild-visualizer esbuild eslint-config-prettier eslint-import-resolver-typescript eslint-plugin-import eslint-plugin-prettier eslint-plugin-simple-import-sort eslint husky jest jest-junit lambda-live-debugger prettier projen ts-jest ts-node typescript @aws-sdk/client-dynamodb @aws-sdk/lib-dynamodb @veho/cdk @veho/client-api-contract @veho/event-types @veho/events @veho/janus-sdk @veho/lambda-utils @veho/merged-api @veho/observability-sdk aws-cdk-lib aws-sigv4-fetch aws-xray-sdk-core constructs dynamodb-toolbox graphql graphql-request ulid"
         },
         {
           "exec": "npx projen"
