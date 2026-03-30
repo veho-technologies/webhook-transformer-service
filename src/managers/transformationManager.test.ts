@@ -13,7 +13,7 @@ const mockCreateAttempt = jest.fn()
 const mockSendTrackerUpdate = jest.fn()
 const mockGetPackageEventHistory = jest.fn()
 const mockGetPackageWithHistory = jest.fn()
-const mockGetFacilityCoordinates = jest.fn()
+const mockGetFacilityLocation = jest.fn()
 
 jest.mock('../dataAccessors/trackerSubscriptionDataAccessor', () => ({
   trackerSubscriptionDataAccessor: {
@@ -50,7 +50,7 @@ jest.mock('../adapters/lugusAdapter', () => ({
 
 jest.mock('../adapters/janusAdapter', () => ({
   janusAdapter: {
-    getFacilityCoordinates: (...args: unknown[]) => mockGetFacilityCoordinates(...args),
+    getFacilityLocation: (...args: unknown[]) => mockGetFacilityLocation(...args),
   },
 }))
 
@@ -282,7 +282,7 @@ describe('transformationManager', () => {
       expect(trackerAttrs.events[0].message).toBe('DELIVERED')
     })
 
-    it('should inject coordinates from Lugus event location when available', async () => {
+    it('should use Lugus coordinates with Janus city when both available', async () => {
       mockGetByTrackingNumber.mockResolvedValue(MOCK_SUBSCRIPTION)
       mockGetByClientId.mockResolvedValue(MOCK_CONFIG)
       mockGetPackageEventHistory.mockResolvedValue([
@@ -293,24 +293,7 @@ describe('transformationManager', () => {
           location: { lat: 40.71, lng: -74.0 },
         },
       ])
-      mockSendTrackerUpdate.mockResolvedValue({ success: true })
-      mockCreateAttempt.mockResolvedValue({})
-
-      await transformationManager.processEnrichedPackageEvent(SAMPLE_ENRICHED_EVENT)
-
-      const trackerAttrs: TrackerAttributes = mockSendTrackerUpdate.mock.calls[0][0]
-      expect(trackerAttrs.events[0].latitude).toBe(40.71)
-      expect(trackerAttrs.events[0].longitude).toBe(-74.0)
-      expect(mockGetFacilityCoordinates).not.toHaveBeenCalled()
-    })
-
-    it('should fall back to Janus via platformFacilityId when Lugus location is missing', async () => {
-      mockGetByTrackingNumber.mockResolvedValue(MOCK_SUBSCRIPTION)
-      mockGetByClientId.mockResolvedValue(MOCK_CONFIG)
-      mockGetPackageEventHistory.mockResolvedValue([
-        { eventType: 'delivered', timestamp: '2024-01-02T14:00:00Z', message: 'Package delivered' },
-      ])
-      mockGetFacilityCoordinates.mockResolvedValue({ lat: 42.36, lng: -71.06 })
+      mockGetFacilityLocation.mockResolvedValue({ lat: 42.36, lng: -71.06, city: 'Boston' })
       mockSendTrackerUpdate.mockResolvedValue({ success: true })
       mockCreateAttempt.mockResolvedValue({})
 
@@ -324,10 +307,39 @@ describe('transformationManager', () => {
 
       await transformationManager.processEnrichedPackageEvent(eventWithFacility)
 
-      expect(mockGetFacilityCoordinates).toHaveBeenCalledWith('platform-fac-001')
+      const trackerAttrs: TrackerAttributes = mockSendTrackerUpdate.mock.calls[0][0]
+      // Lugus coordinates preferred over Janus
+      expect(trackerAttrs.events[0].latitude).toBe(40.71)
+      expect(trackerAttrs.events[0].longitude).toBe(-74.0)
+      // City from Janus
+      expect(trackerAttrs.events[0].city).toBe('Boston')
+    })
+
+    it('should use Janus for all fields when Lugus location is missing', async () => {
+      mockGetByTrackingNumber.mockResolvedValue(MOCK_SUBSCRIPTION)
+      mockGetByClientId.mockResolvedValue(MOCK_CONFIG)
+      mockGetPackageEventHistory.mockResolvedValue([
+        { eventType: 'delivered', timestamp: '2024-01-02T14:00:00Z', message: 'Package delivered' },
+      ])
+      mockGetFacilityLocation.mockResolvedValue({ lat: 42.36, lng: -71.06, city: 'Boston' })
+      mockSendTrackerUpdate.mockResolvedValue({ success: true })
+      mockCreateAttempt.mockResolvedValue({})
+
+      const eventWithFacility = {
+        ...SAMPLE_ENRICHED_EVENT,
+        entity: {
+          ...SAMPLE_ENRICHED_EVENT.entity,
+          order: { ...SAMPLE_ENRICHED_EVENT.entity.order, platformFacilityId: 'platform-fac-001' },
+        },
+      } as EnrichedPackageEventWithEventLog
+
+      await transformationManager.processEnrichedPackageEvent(eventWithFacility)
+
+      expect(mockGetFacilityLocation).toHaveBeenCalledWith('platform-fac-001')
       const trackerAttrs: TrackerAttributes = mockSendTrackerUpdate.mock.calls[0][0]
       expect(trackerAttrs.events[0].latitude).toBe(42.36)
       expect(trackerAttrs.events[0].longitude).toBe(-71.06)
+      expect(trackerAttrs.events[0].city).toBe('Boston')
     })
 
     it('should fall back to Janus via facilityId when platformFacilityId returns no coordinates', async () => {
@@ -336,9 +348,9 @@ describe('transformationManager', () => {
       mockGetPackageEventHistory.mockResolvedValue([
         { eventType: 'delivered', timestamp: '2024-01-02T14:00:00Z', message: 'Package delivered' },
       ])
-      mockGetFacilityCoordinates
+      mockGetFacilityLocation
         .mockResolvedValueOnce(null) // platformFacilityId returns nothing
-        .mockResolvedValueOnce({ lat: 33.75, lng: -84.39 }) // facilityId succeeds
+        .mockResolvedValueOnce({ lat: 33.75, lng: -84.39, city: 'Atlanta' }) // facilityId succeeds
       mockSendTrackerUpdate.mockResolvedValue({ success: true })
       mockCreateAttempt.mockResolvedValue({})
 
@@ -356,9 +368,9 @@ describe('transformationManager', () => {
 
       await transformationManager.processEnrichedPackageEvent(eventWithBothIds)
 
-      expect(mockGetFacilityCoordinates).toHaveBeenCalledTimes(2)
-      expect(mockGetFacilityCoordinates).toHaveBeenNthCalledWith(1, 'platform-fac-001')
-      expect(mockGetFacilityCoordinates).toHaveBeenNthCalledWith(2, 'legacy-fac-002')
+      expect(mockGetFacilityLocation).toHaveBeenCalledTimes(2)
+      expect(mockGetFacilityLocation).toHaveBeenNthCalledWith(1, 'platform-fac-001')
+      expect(mockGetFacilityLocation).toHaveBeenNthCalledWith(2, 'legacy-fac-002')
       const trackerAttrs: TrackerAttributes = mockSendTrackerUpdate.mock.calls[0][0]
       expect(trackerAttrs.events[0].latitude).toBe(33.75)
       expect(trackerAttrs.events[0].longitude).toBe(-84.39)
@@ -370,7 +382,7 @@ describe('transformationManager', () => {
       mockGetPackageEventHistory.mockResolvedValue([
         { eventType: 'delivered', timestamp: '2024-01-02T14:00:00Z', message: 'Package delivered' },
       ])
-      mockGetFacilityCoordinates.mockResolvedValue(null)
+      mockGetFacilityLocation.mockResolvedValue(null)
       mockSendTrackerUpdate.mockResolvedValue({ success: true })
       mockCreateAttempt.mockResolvedValue({})
 
@@ -388,8 +400,8 @@ describe('transformationManager', () => {
 
       await transformationManager.processEnrichedPackageEvent(eventWithSameIds)
 
-      expect(mockGetFacilityCoordinates).toHaveBeenCalledTimes(1)
-      expect(mockGetFacilityCoordinates).toHaveBeenCalledWith('same-fac-id')
+      expect(mockGetFacilityLocation).toHaveBeenCalledTimes(1)
+      expect(mockGetFacilityLocation).toHaveBeenCalledWith('same-fac-id')
     })
 
     it('should send events without coordinates when no source is available', async () => {
@@ -406,7 +418,8 @@ describe('transformationManager', () => {
       const trackerAttrs: TrackerAttributes = mockSendTrackerUpdate.mock.calls[0][0]
       expect(trackerAttrs.events[0].latitude).toBeUndefined()
       expect(trackerAttrs.events[0].longitude).toBeUndefined()
-      expect(mockGetFacilityCoordinates).not.toHaveBeenCalled()
+      expect(trackerAttrs.events[0].city).toBeUndefined()
+      expect(mockGetFacilityLocation).not.toHaveBeenCalled()
     })
 
     it('should only send the latest event from Lugus', async () => {

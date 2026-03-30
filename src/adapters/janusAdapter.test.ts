@@ -11,19 +11,32 @@ jest.mock('@veho/janus-sdk', () => ({
 describe('janusAdapter', () => {
   beforeEach(() => jest.clearAllMocks())
 
-  describe('getFacilityCoordinates', () => {
-    it('should return lat/lng when facility has coordinates', async () => {
+  describe('getFacilityLocation', () => {
+    it('should return lat/lng/city when facility has coordinates and city', async () => {
       mockGetFacility.mockResolvedValue({
         facility: {
           facilityId: 'fac-001',
-          address: { location: { lat: 40.7128, lng: -74.006 } },
+          address: { city: 'New York', location: { lat: 40.7128, lng: -74.006 } },
         },
       })
 
-      const result = await janusAdapter.getFacilityCoordinates('fac-001')
+      const result = await janusAdapter.getFacilityLocation('fac-001')
 
-      expect(result).toEqual({ lat: 40.7128, lng: -74.006 })
+      expect(result).toEqual({ lat: 40.7128, lng: -74.006, city: 'New York' })
       expect(mockGetFacility).toHaveBeenCalledWith({ facilityId: 'fac-001' })
+    })
+
+    it('should return null when facility has coordinates but no city', async () => {
+      mockGetFacility.mockResolvedValue({
+        facility: {
+          facilityId: 'fac-001',
+          address: { city: null, location: { lat: 40.7128, lng: -74.006 } },
+        },
+      })
+
+      const result = await janusAdapter.getFacilityLocation('fac-001')
+
+      expect(result).toBeNull()
     })
 
     it('should return null when facility has no location', async () => {
@@ -34,7 +47,7 @@ describe('janusAdapter', () => {
         },
       })
 
-      const result = await janusAdapter.getFacilityCoordinates('fac-001')
+      const result = await janusAdapter.getFacilityLocation('fac-001')
 
       expect(result).toBeNull()
     })
@@ -47,7 +60,7 @@ describe('janusAdapter', () => {
         },
       })
 
-      const result = await janusAdapter.getFacilityCoordinates('fac-001')
+      const result = await janusAdapter.getFacilityLocation('fac-001')
 
       expect(result).toBeNull()
     })
@@ -55,7 +68,7 @@ describe('janusAdapter', () => {
     it('should return null when facility is not found', async () => {
       mockGetFacility.mockResolvedValue({ facility: null })
 
-      const result = await janusAdapter.getFacilityCoordinates('nonexistent')
+      const result = await janusAdapter.getFacilityLocation('nonexistent')
 
       expect(result).toBeNull()
     })
@@ -68,7 +81,7 @@ describe('janusAdapter', () => {
         },
       })
 
-      const result = await janusAdapter.getFacilityCoordinates('fac-001')
+      const result = await janusAdapter.getFacilityLocation('fac-001')
 
       expect(result).toBeNull()
     })
@@ -76,7 +89,7 @@ describe('janusAdapter', () => {
     it('should return null and not throw when SDK throws', async () => {
       mockGetFacility.mockRejectedValue(new Error('Network error'))
 
-      const result = await janusAdapter.getFacilityCoordinates('fac-001')
+      const result = await janusAdapter.getFacilityLocation('fac-001')
 
       expect(result).toBeNull()
     })
