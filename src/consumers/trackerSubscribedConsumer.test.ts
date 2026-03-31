@@ -59,13 +59,15 @@ function buildEvent(
 describe('trackerSubscribedConsumer', () => {
   beforeEach(() => jest.clearAllMocks())
 
-  it('calls processInitialSubscription with trackingNumber, trackerReferenceId, and carrierId', async () => {
+  it('calls processInitialSubscription with trackingNumber, trackerReferenceId, carrierId, webhookId, and idempotencyKey', async () => {
     await handler(wrapInSqsEvent(buildEvent()), {} as never, noopCallback)
 
     expect(mockProcessInitialSubscription).toHaveBeenCalledWith({
       trackingNumber: 'TRK-001',
       trackerReferenceId: 'shopify-tracker-001',
       carrierId: 'carrier-001',
+      webhookId: 'webhook-001',
+      idempotencyKey: 'idem-001',
     })
   })
 
