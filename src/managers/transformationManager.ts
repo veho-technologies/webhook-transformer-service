@@ -116,7 +116,12 @@ async function resolveLocation(
   // Fall back to Janus for coordinates (+ city if available)
   if (janusLocation) return janusLocation
 
-  log.warn('No location available: no facilityId to query Janus')
+  log.warn('Unable to resolve location from Lugus/Janus', {
+    platformFacilityId,
+    facilityId,
+    lugusHasCoords: lugusLocation?.lat != null && lugusLocation?.lng != null,
+    janusReturned: janusLocation != null,
+  })
   return null
 }
 
