@@ -1,7 +1,6 @@
 import { getHumanReadablePackageOperationText } from '@veho/client-api-contract'
 import type { EnrichedPackageEvent, OrderAndPackage, Package } from '@veho/events'
 import { log } from '@veho/observability-sdk'
-import { ulid } from 'ulid'
 
 import { type FacilityLocation, janusAdapter } from '../adapters/janusAdapter'
 import { lugusAdapter } from '../adapters/lugusAdapter'
@@ -273,6 +272,7 @@ export const transformationManager = {
     trackerReferenceId: string
     carrierId: string
     webhookId: string
+    idempotencyKey: string
   }): Promise<void> {
     const { clientId, packageLog } = await lugusAdapter.getPackageWithHistory(params.trackingNumber)
     if (!clientId) {
@@ -302,13 +302,12 @@ export const transformationManager = {
     const { eventLevel } = splitFieldMappings(fieldMappings)
     const events = buildTrackerEvents(packageLog, eventLevel, statusMap)
 
-    const idempotencyKey = ulid()
     const trackerAttributes: TrackerAttributes = {
       trackingNumber: params.trackingNumber,
       carrierId: subscription.carrierId,
       trackerReferenceId: subscription.trackerReferenceId,
       webhookId: subscription.webhookId,
-      idempotencyKey,
+      idempotencyKey: params.idempotencyKey,
       events,
     }
 
@@ -319,7 +318,7 @@ export const transformationManager = {
       clientId,
       trackerReferenceId: subscription.trackerReferenceId,
       status: result.success ? 'success' : 'failure',
-      idempotencyKey,
+      idempotencyKey: params.idempotencyKey,
       occurredAt: new Date().toISOString(),
     })
   },

@@ -16,6 +16,7 @@ const handleMessage = async (
     trackerReferenceId: payload.providerTrackerId,
     carrierId: payload.providerCarrierId,
     webhookId: payload.providerWebhookId,
+    idempotencyKey: payload.idempotencyKey,
   })
 }
 

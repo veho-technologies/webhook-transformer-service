@@ -67,6 +67,7 @@ describe('trackerSubscribedConsumer', () => {
       trackerReferenceId: 'shopify-tracker-001',
       carrierId: 'carrier-001',
       webhookId: 'webhook-001',
+      idempotencyKey: 'idem-001',
     })
   })
 

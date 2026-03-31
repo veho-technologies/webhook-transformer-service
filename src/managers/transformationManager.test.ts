@@ -54,10 +54,6 @@ jest.mock('../adapters/janusAdapter', () => ({
   },
 }))
 
-jest.mock('ulid', () => ({
-  ulid: () => 'mock-ulid-123',
-}))
-
 const MOCK_SUBSCRIPTION: TrackerSubscription = {
   trackingNumber: 'TRK-123',
   trackerReferenceId: 'ref-456',
@@ -531,6 +527,7 @@ describe('transformationManager', () => {
       trackerReferenceId: 'ref-456',
       carrierId: 'carrier-789',
       webhookId: 'webhook-001',
+      idempotencyKey: 'shopify-idem-001',
     }
 
     it('should get clientId from Lugus, create subscription via conditional write, and send to Shopify', async () => {
@@ -552,7 +549,7 @@ describe('transformationManager', () => {
         })
       )
       expect(mockSendTrackerUpdate).toHaveBeenCalledWith(
-        expect.objectContaining({ trackerReferenceId: 'ref-456', idempotencyKey: 'mock-ulid-123' })
+        expect.objectContaining({ trackerReferenceId: 'ref-456', idempotencyKey: 'shopify-idem-001' })
       )
     })
 
@@ -574,7 +571,7 @@ describe('transformationManager', () => {
         expect.objectContaining({
           carrierId: 'persisted-carrier',
           trackerReferenceId: 'persisted-ref',
-          idempotencyKey: 'mock-ulid-123',
+          idempotencyKey: 'shopify-idem-001',
         })
       )
       expect(mockCreateAttempt).toHaveBeenCalledWith(expect.objectContaining({ trackerReferenceId: 'persisted-ref' }))
@@ -597,7 +594,7 @@ describe('transformationManager', () => {
           trackingNumber: 'TRK-123',
           carrierId: 'carrier-789',
           trackerReferenceId: 'ref-456',
-          idempotencyKey: 'mock-ulid-123',
+          idempotencyKey: 'shopify-idem-001',
           events: [{ status: 'OUT_FOR_DELIVERY', happenedAt: '2024-01-02T10:00:00Z', message: 'Out for delivery' }],
         })
       )
@@ -617,7 +614,7 @@ describe('transformationManager', () => {
           trackingNumber: 'TRK-123',
           clientId: 'client-123',
           status: 'success',
-          idempotencyKey: 'mock-ulid-123',
+          idempotencyKey: 'shopify-idem-001',
         })
       )
     })
@@ -877,6 +874,7 @@ describe('transformationManager', () => {
         trackerReferenceId: 'gid://shopify/Tracker/12345',
         carrierId: 'veho-carrier-id',
         webhookId: 'shopify-webhook-abc',
+        idempotencyKey: 'shopify-idem-xyz',
       })
 
       const trackerAttrs: TrackerAttributes = mockSendTrackerUpdate.mock.calls[0][0]
@@ -885,11 +883,11 @@ describe('transformationManager', () => {
       expect(trackerAttrs.carrierId).toBe('veho-carrier-id')
       expect(trackerAttrs.events).toEqual(EXPECTED_TRACKER_EVENTS)
 
-      // Uses trackerReferenceId, generates own idempotencyKey
+      // Uses Shopify's idempotencyKey from the subscribe webhook
       expect(mockSendTrackerUpdate).toHaveBeenCalledWith(
         expect.objectContaining({
           trackerReferenceId: 'gid://shopify/Tracker/12345',
-          idempotencyKey: 'mock-ulid-123',
+          idempotencyKey: 'shopify-idem-xyz',
         })
       )
 
