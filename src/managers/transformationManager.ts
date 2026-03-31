@@ -1,9 +1,8 @@
 import { getHumanReadablePackageOperationText } from '@veho/client-api-contract'
 import type { EnrichedPackageEvent, OrderAndPackage, Package } from '@veho/events'
 import { log } from '@veho/observability-sdk'
-import { ulid } from 'ulid'
 
-import { janusAdapter } from '../adapters/janusAdapter'
+import { type FacilityLocation, janusAdapter } from '../adapters/janusAdapter'
 import { lugusAdapter } from '../adapters/lugusAdapter'
 import { shopifyGraphqlAdapter } from '../adapters/shopifyGraphqlAdapter'
 import { clientConfigDataAccessor } from '../dataAccessors/clientConfigDataAccessor'
@@ -91,26 +90,38 @@ function getConfigMappings(config: ClientConfig): {
   }
 }
 
-async function resolveCoordinates(
+async function resolveLocation(
   lugusLocation: { lat?: number | null; lng?: number | null } | null | undefined,
   platformFacilityId: string | null | undefined,
   facilityId: string | null | undefined
-): Promise<{ lat: number; lng: number } | null> {
-  if (lugusLocation?.lat != null && lugusLocation?.lng != null) {
-    return { lat: lugusLocation.lat, lng: lugusLocation.lng }
-  }
-
+): Promise<FacilityLocation | null> {
+  // Always try Janus — it's the only source of city
+  let janusLocation: FacilityLocation | null = null
   if (platformFacilityId) {
-    const coords = await janusAdapter.getFacilityCoordinates(platformFacilityId)
-    if (coords) return coords
+    janusLocation = await janusAdapter.getFacilityLocation(platformFacilityId)
+  }
+  if (!janusLocation && facilityId && facilityId !== platformFacilityId) {
+    janusLocation = await janusAdapter.getFacilityLocation(facilityId)
   }
 
-  if (facilityId && facilityId !== platformFacilityId) {
-    const coords = await janusAdapter.getFacilityCoordinates(facilityId)
-    if (coords) return coords
+  // Prefer Lugus coordinates over Janus, combine with Janus city when available
+  if (lugusLocation?.lat != null && lugusLocation?.lng != null) {
+    return {
+      lat: lugusLocation.lat,
+      lng: lugusLocation.lng,
+      ...(janusLocation?.city ? { city: janusLocation.city } : {}),
+    }
   }
 
-  log.warn('No coordinates available: no facilityId to query Janus')
+  // Fall back to Janus for coordinates (+ city if available)
+  if (janusLocation) return janusLocation
+
+  log.warn('Unable to resolve location from Lugus/Janus', {
+    platformFacilityId,
+    facilityId,
+    lugusHasCoords: lugusLocation?.lat != null && lugusLocation?.lng != null,
+    janusReturned: janusLocation != null,
+  })
   return null
 }
 
@@ -154,22 +165,25 @@ export const transformationManager = {
     const lastLugusEvent = lugusEvents.at(-1)
     const events = lastLugusEvent ? buildTrackerEvents([lastLugusEvent], eventLevel, statusMap) : []
 
-    // Resolve coordinates: try Lugus event location first, fall back to Janus facility
+    // Resolve location: try Lugus event location first, fall back to Janus facility
 
-    log.info('Trying to get coordinates', {
+    log.info('Trying to get location', {
       locationFromLugus: lastLugusEvent?.location,
       platformFacilityId: event.entity?.order?.platformFacilityId,
       facilityId: event.entity?.order?.facilityId,
     })
-    const coordinates = await resolveCoordinates(
+    const location = await resolveLocation(
       lastLugusEvent?.location,
       event.entity?.order?.platformFacilityId,
       event.entity?.order?.facilityId
     )
-    if (coordinates) {
+    if (location) {
       for (const evt of events) {
-        evt.latitude = coordinates.lat
-        evt.longitude = coordinates.lng
+        evt.latitude = location.lat
+        evt.longitude = location.lng
+        if (location.city) {
+          evt.city = location.city
+        }
       }
     }
 
@@ -268,6 +282,8 @@ export const transformationManager = {
     trackingNumber: string
     trackerReferenceId: string
     carrierId: string
+    webhookId: string
+    idempotencyKey: string
   }): Promise<void> {
     const { clientId, packageLog } = await lugusAdapter.getPackageWithHistory(params.trackingNumber)
     if (!clientId) {
@@ -281,6 +297,7 @@ export const transformationManager = {
       trackingNumber: params.trackingNumber,
       trackerReferenceId: params.trackerReferenceId,
       carrierId: params.carrierId,
+      webhookId: params.webhookId,
       clientId,
       subscribedAt: now.toISOString(),
       ttl: sixMonthsTtl,
@@ -296,12 +313,12 @@ export const transformationManager = {
     const { eventLevel } = splitFieldMappings(fieldMappings)
     const events = buildTrackerEvents(packageLog, eventLevel, statusMap)
 
-    const idempotencyKey = ulid()
     const trackerAttributes: TrackerAttributes = {
       trackingNumber: params.trackingNumber,
       carrierId: subscription.carrierId,
       trackerReferenceId: subscription.trackerReferenceId,
-      idempotencyKey,
+      webhookId: params.webhookId ?? subscription.webhookId,
+      idempotencyKey: params.idempotencyKey,
       events,
     }
 
@@ -312,7 +329,7 @@ export const transformationManager = {
       clientId,
       trackerReferenceId: subscription.trackerReferenceId,
       status: result.success ? 'success' : 'failure',
-      idempotencyKey,
+      idempotencyKey: params.idempotencyKey,
       occurredAt: new Date().toISOString(),
     })
   },

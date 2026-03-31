@@ -9,19 +9,26 @@ const getJanusSdk = () => {
   })
 }
 
+export interface FacilityLocation {
+  lat: number
+  lng: number
+  city?: string
+}
+
 export const janusAdapter = {
-  async getFacilityCoordinates(facilityId: string): Promise<{ lat: number; lng: number } | null> {
+  async getFacilityLocation(facilityId: string): Promise<FacilityLocation | null> {
     try {
       const sdk = getJanusSdk()
       const { facility } = await sdk.GetFacility({ facilityId })
-      const location = facility?.address?.location
+      const address = facility?.address
+      const location = address?.location
       if (location?.lat != null && location?.lng != null) {
-        return { lat: location.lat, lng: location.lng }
+        return { lat: location.lat, lng: location.lng, ...(address?.city ? { city: address.city } : {}) }
       }
       log.warn('Facility has no coordinates', { facilityId })
       return null
     } catch (error) {
-      log.error('Failed to fetch facility coordinates from Janus', { facilityId, error })
+      log.error('Failed to fetch facility location from Janus', { facilityId, error })
       return null
     }
   },
