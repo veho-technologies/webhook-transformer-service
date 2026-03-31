@@ -28,6 +28,7 @@ export const TrackerSubscriptionEntity = new Entity({
     trackingNumber: schema.string().key(),
     trackerReferenceId: schema.string().required(),
     carrierId: schema.string().required(),
+    webhookId: schema.string().optional(),
     clientId: schema.string().required(),
     destinationPostalCode: schema.string().optional(),
     subscribedAt: schema.string().required(),

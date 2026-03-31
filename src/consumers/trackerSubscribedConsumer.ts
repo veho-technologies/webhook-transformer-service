@@ -15,6 +15,7 @@ const handleMessage = async (
     trackingNumber: payload.trackingNumber,
     trackerReferenceId: payload.providerTrackerId,
     carrierId: payload.providerCarrierId,
+    webhookId: payload.providerWebhookId,
   })
 }
 

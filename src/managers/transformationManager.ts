@@ -272,6 +272,7 @@ export const transformationManager = {
     trackingNumber: string
     trackerReferenceId: string
     carrierId: string
+    webhookId: string
   }): Promise<void> {
     const { clientId, packageLog } = await lugusAdapter.getPackageWithHistory(params.trackingNumber)
     if (!clientId) {
@@ -285,6 +286,7 @@ export const transformationManager = {
       trackingNumber: params.trackingNumber,
       trackerReferenceId: params.trackerReferenceId,
       carrierId: params.carrierId,
+      webhookId: params.webhookId,
       clientId,
       subscribedAt: now.toISOString(),
       ttl: sixMonthsTtl,
@@ -305,6 +307,7 @@ export const transformationManager = {
       trackingNumber: params.trackingNumber,
       carrierId: subscription.carrierId,
       trackerReferenceId: subscription.trackerReferenceId,
+      webhookId: subscription.webhookId,
       idempotencyKey,
       events,
     }

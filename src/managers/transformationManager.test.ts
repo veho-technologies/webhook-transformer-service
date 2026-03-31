@@ -62,6 +62,7 @@ const MOCK_SUBSCRIPTION: TrackerSubscription = {
   trackingNumber: 'TRK-123',
   trackerReferenceId: 'ref-456',
   carrierId: 'carrier-789',
+  webhookId: 'webhook-001',
   clientId: 'client-123',
   subscribedAt: '2024-01-01T00:00:00.000Z',
 }
@@ -529,6 +530,7 @@ describe('transformationManager', () => {
       trackingNumber: 'TRK-123',
       trackerReferenceId: 'ref-456',
       carrierId: 'carrier-789',
+      webhookId: 'webhook-001',
     }
 
     it('should get clientId from Lugus, create subscription via conditional write, and send to Shopify', async () => {
@@ -679,6 +681,7 @@ describe('transformationManager', () => {
       trackingNumber: 'VEHO-TRK-12345',
       trackerReferenceId: 'gid://shopify/Tracker/12345',
       carrierId: 'veho-carrier-id',
+      webhookId: 'shopify-webhook-abc',
       clientId: 'client-shopify-001',
       subscribedAt: '2024-08-19T10:00:00.000Z',
     }
@@ -873,6 +876,7 @@ describe('transformationManager', () => {
         trackingNumber: 'VEHO-TRK-12345',
         trackerReferenceId: 'gid://shopify/Tracker/12345',
         carrierId: 'veho-carrier-id',
+        webhookId: 'shopify-webhook-abc',
       })
 
       const trackerAttrs: TrackerAttributes = mockSendTrackerUpdate.mock.calls[0][0]
