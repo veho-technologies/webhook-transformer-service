@@ -1,3 +1,4 @@
+import { RetryableError } from '@veho/lambda-utils'
 import { GraphQLError } from 'graphql'
 import { ClientError, GraphQLClient } from 'graphql-request'
 
@@ -47,16 +48,13 @@ describe('shopifyGraphqlAdapter.sendTrackerUpdate', () => {
     delete process.env.SHOPIFY_APP_ID
   })
 
-  it('returns success: true on a successful GraphQL response', async () => {
+  it('resolves on a successful GraphQL response', async () => {
     mockRequest.mockResolvedValue({ trackerUpdate: { errors: [], idempotencyKey: 'idem-key-1' } })
 
-    const result = await shopifyGraphqlAdapter.sendTrackerUpdate(SAMPLE_INPUT)
-
-    expect(result.success).toBe(true)
-    expect(result.errors).toBeUndefined()
+    await expect(shopifyGraphqlAdapter.sendTrackerUpdate(SAMPLE_INPUT)).resolves.toBeUndefined()
   })
 
-  it('returns success: false with errors when errors is non-empty', async () => {
+  it('throws on Shopify business errors', async () => {
     mockRequest.mockResolvedValue({
       trackerUpdate: {
         errors: [{ code: 'INVALID', field: 'carrierId', message: 'Invalid carrier' }],
@@ -64,32 +62,41 @@ describe('shopifyGraphqlAdapter.sendTrackerUpdate', () => {
       },
     })
 
-    const result = await shopifyGraphqlAdapter.sendTrackerUpdate(SAMPLE_INPUT)
-
-    expect(result.success).toBe(false)
-    expect(result.errors).toEqual([{ code: 'INVALID', field: 'carrierId', message: 'Invalid carrier' }])
+    const err = await shopifyGraphqlAdapter.sendTrackerUpdate(SAMPLE_INPUT).catch(e => e)
+    expect(err).toBeInstanceOf(Error)
+    expect(err).not.toBeInstanceOf(RetryableError)
+    expect(err.message).toContain('carrierId: Invalid carrier')
   })
 
-  it('returns success: false on ClientError (GraphQL-level error)', async () => {
+  it('throws non-retryable error on 4xx ClientError', async () => {
     const clientError = new ClientError({ errors: [new GraphQLError('Throttled')], status: 200 } as never, {
       query: '',
     })
     mockRequest.mockRejectedValue(clientError)
 
-    const result = await shopifyGraphqlAdapter.sendTrackerUpdate(SAMPLE_INPUT)
-
-    expect(result.success).toBe(false)
-    expect(result.errors?.[0].field).toBe('graphql')
-    expect(result.errors?.[0].message).toContain('Throttled')
+    const err = await shopifyGraphqlAdapter.sendTrackerUpdate(SAMPLE_INPUT).catch(e => e)
+    expect(err).toBeInstanceOf(Error)
+    expect(err).not.toBeInstanceOf(RetryableError)
+    expect(err.message).toContain('Throttled')
   })
 
-  it('returns success: false on network error', async () => {
+  it('throws RetryableError on 5xx ClientError', async () => {
+    const clientError = new ClientError({ errors: [new GraphQLError('Internal Server Error')], status: 503 } as never, {
+      query: '',
+    })
+    mockRequest.mockRejectedValue(clientError)
+
+    const err = await shopifyGraphqlAdapter.sendTrackerUpdate(SAMPLE_INPUT).catch(e => e)
+    expect(err).toBeInstanceOf(RetryableError)
+    expect(err.message).toContain('Internal Server Error')
+  })
+
+  it('throws RetryableError on network error', async () => {
     mockRequest.mockRejectedValue(new Error('ECONNREFUSED'))
 
-    const result = await shopifyGraphqlAdapter.sendTrackerUpdate(SAMPLE_INPUT)
-
-    expect(result.success).toBe(false)
-    expect(result.errors?.[0].message).toContain('ECONNREFUSED')
+    const err = await shopifyGraphqlAdapter.sendTrackerUpdate(SAMPLE_INPUT).catch(e => e)
+    expect(err).toBeInstanceOf(RetryableError)
+    expect(err.message).toContain('ECONNREFUSED')
   })
 
   it('creates client with correct URL and requestMiddleware', async () => {
