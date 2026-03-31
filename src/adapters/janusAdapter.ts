@@ -12,7 +12,7 @@ const getJanusSdk = () => {
 export interface FacilityLocation {
   lat: number
   lng: number
-  city: string
+  city?: string
 }
 
 export const janusAdapter = {
@@ -22,10 +22,10 @@ export const janusAdapter = {
       const { facility } = await sdk.GetFacility({ facilityId })
       const address = facility?.address
       const location = address?.location
-      if (location?.lat != null && location?.lng != null && address?.city) {
-        return { lat: location.lat, lng: location.lng, city: address.city }
+      if (location?.lat != null && location?.lng != null) {
+        return { lat: location.lat, lng: location.lng, ...(address?.city ? { city: address.city } : {}) }
       }
-      log.warn('Facility missing coordinates or city', { facilityId })
+      log.warn('Facility has no coordinates', { facilityId })
       return null
     } catch (error) {
       log.error('Failed to fetch facility location from Janus', { facilityId, error })

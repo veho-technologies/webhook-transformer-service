@@ -104,12 +104,16 @@ async function resolveLocation(
     janusLocation = await janusAdapter.getFacilityLocation(facilityId)
   }
 
-  // Prefer Lugus coordinates over Janus, combine with Janus city
-  if (lugusLocation?.lat != null && lugusLocation?.lng != null && janusLocation?.city) {
-    return { lat: lugusLocation.lat, lng: lugusLocation.lng, city: janusLocation.city }
+  // Prefer Lugus coordinates over Janus, combine with Janus city when available
+  if (lugusLocation?.lat != null && lugusLocation?.lng != null) {
+    return {
+      lat: lugusLocation.lat,
+      lng: lugusLocation.lng,
+      ...(janusLocation?.city ? { city: janusLocation.city } : {}),
+    }
   }
 
-  // Janus provides all three (lat, lng, city)
+  // Fall back to Janus for coordinates (+ city if available)
   if (janusLocation) return janusLocation
 
   log.warn('No location available: no facilityId to query Janus')
@@ -172,7 +176,9 @@ export const transformationManager = {
       for (const evt of events) {
         evt.latitude = location.lat
         evt.longitude = location.lng
-        evt.city = location.city
+        if (location.city) {
+          evt.city = location.city
+        }
       }
     }
 
@@ -306,7 +312,7 @@ export const transformationManager = {
       trackingNumber: params.trackingNumber,
       carrierId: subscription.carrierId,
       trackerReferenceId: subscription.trackerReferenceId,
-      webhookId: subscription.webhookId,
+      webhookId: params.webhookId ?? subscription.webhookId,
       idempotencyKey: params.idempotencyKey,
       events,
     }

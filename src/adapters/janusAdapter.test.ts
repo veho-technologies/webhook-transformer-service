@@ -26,7 +26,7 @@ describe('janusAdapter', () => {
       expect(mockGetFacility).toHaveBeenCalledWith({ facilityId: 'fac-001' })
     })
 
-    it('should return null when facility has coordinates but no city', async () => {
+    it('should return lat/lng without city when facility has no city', async () => {
       mockGetFacility.mockResolvedValue({
         facility: {
           facilityId: 'fac-001',
@@ -36,7 +36,7 @@ describe('janusAdapter', () => {
 
       const result = await janusAdapter.getFacilityLocation('fac-001')
 
-      expect(result).toBeNull()
+      expect(result).toEqual({ lat: 40.7128, lng: -74.006 })
     })
 
     it('should return null when facility has no location', async () => {

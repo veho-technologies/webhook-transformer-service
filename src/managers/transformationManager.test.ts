@@ -312,6 +312,37 @@ describe('transformationManager', () => {
       expect(trackerAttrs.events[0].city).toBe('Boston')
     })
 
+    it('should keep Lugus coordinates when Janus has no location', async () => {
+      mockGetByTrackingNumber.mockResolvedValue(MOCK_SUBSCRIPTION)
+      mockGetByClientId.mockResolvedValue(MOCK_CONFIG)
+      mockGetPackageEventHistory.mockResolvedValue([
+        {
+          eventType: 'delivered',
+          timestamp: '2024-01-02T14:00:00Z',
+          message: 'Package delivered',
+          location: { lat: 40.71, lng: -74.0 },
+        },
+      ])
+      mockGetFacilityLocation.mockResolvedValue(null)
+      mockSendTrackerUpdate.mockResolvedValue({ success: true })
+      mockCreateAttempt.mockResolvedValue({})
+
+      const eventWithFacility = {
+        ...SAMPLE_ENRICHED_EVENT,
+        entity: {
+          ...SAMPLE_ENRICHED_EVENT.entity,
+          order: { ...SAMPLE_ENRICHED_EVENT.entity.order, platformFacilityId: 'platform-fac-001' },
+        },
+      } as EnrichedPackageEventWithEventLog
+
+      await transformationManager.processEnrichedPackageEvent(eventWithFacility)
+
+      const trackerAttrs: TrackerAttributes = mockSendTrackerUpdate.mock.calls[0][0]
+      expect(trackerAttrs.events[0].latitude).toBe(40.71)
+      expect(trackerAttrs.events[0].longitude).toBe(-74.0)
+      expect(trackerAttrs.events[0].city).toBeUndefined()
+    })
+
     it('should use Janus for all fields when Lugus location is missing', async () => {
       mockGetByTrackingNumber.mockResolvedValue(MOCK_SUBSCRIPTION)
       mockGetByClientId.mockResolvedValue(MOCK_CONFIG)
